@@ -1707,18 +1707,8 @@ canvas.addEventListener('pointerdown', (e) => {
   if (game.state !== 'ready' && game.state !== 'playing') return;
   if (!amPencil()) return;             // the holder does not get to drag
   const p = toVirtual(e.clientX, e.clientY);
-  
-  // On touch devices, expand grab radius so fingers can easily grab the bump
-  const touchBonus = (e.pointerType === 'touch' || e.pointerType === 'pen') ? 2.5 : 1.4;
-  const grabR = (T.GRAB_RADIUS_PX * touchBonus) / view.scale;
-  const dist = Math.hypot(p.x - game.tip.x, p.y - game.tip.y);
 
-  // If touched within expanded grab radius OR touched anywhere near start line during 'ready'
-  const nearStart = (game.state === 'ready' && p.y >= HOLE_MAX_Y - 30);
-  if (dist > grabR && !nearStart) return;
-
-  // Keep the offset from finger to bump, so the bump holds its distance and
-  // stays above the fingertip instead of hiding under it.
+  // Touching anywhere on the paper seamlessly grabs and steers the pencil bump
   let dx = game.tip.x - p.x;
   let dy = game.tip.y - p.y;
   const minAbove = T.MIN_ABOVE_FINGER / view.scale;
