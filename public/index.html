@@ -344,7 +344,7 @@
   }
 
   /* ---- Shake strips (two-player only) ------------------------------- */
-  #strips { position: absolute; inset: 0; pointer-events: none; }
+  #strips { position: absolute; inset: 0; pointer-events: none; z-index: 50; }
   #strips[hidden] { display: none; }
 
   /* The touch target runs the full width of the un-punched margin, but the
@@ -1303,8 +1303,11 @@ function applyShake(dir) {
  * nobody is holding the sheet — so no shake ever crosses the wire.
  */
 function shakeSheet(dir) {
-  if (!amHolder() || game.state !== 'playing') return false;
+  if (!amHolder()) return false;
+  if (game.state !== 'ready' && game.state !== 'playing') return false;
   if (game.charges < 1) return false;
+
+  if (game.state === 'ready') game.state = 'playing';
 
   game.charges--;
   game.rechargeT = 0;
@@ -1704,9 +1707,15 @@ canvas.addEventListener('pointerdown', (e) => {
   if (game.state !== 'ready' && game.state !== 'playing') return;
   if (!amPencil()) return;             // the holder does not get to drag
   const p = toVirtual(e.clientX, e.clientY);
-  const grabR = T.GRAB_RADIUS_PX / view.scale;
+  
+  // On touch devices, expand grab radius so fingers can easily grab the bump
+  const touchBonus = (e.pointerType === 'touch' || e.pointerType === 'pen') ? 2.5 : 1.4;
+  const grabR = (T.GRAB_RADIUS_PX * touchBonus) / view.scale;
+  const dist = Math.hypot(p.x - game.tip.x, p.y - game.tip.y);
 
-  if (Math.hypot(p.x - game.tip.x, p.y - game.tip.y) > grabR) return;
+  // If touched within expanded grab radius OR touched anywhere near start line during 'ready'
+  const nearStart = (game.state === 'ready' && p.y >= HOLE_MAX_Y - 30);
+  if (dist > grabR && !nearStart) return;
 
   // Keep the offset from finger to bump, so the bump holds its distance and
   // stays above the fingertip instead of hiding under it.
