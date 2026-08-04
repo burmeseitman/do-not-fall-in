@@ -1,0 +1,2383 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#191B21">
+<!-- The server sends this as a header too; the meta copy is what protects the
+     page when it is opened straight from disk. The one script is inline, so
+     'unsafe-inline' cannot be avoided without a build step, but nothing
+     external can be loaded or contacted apart from Google Fonts. -->
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'none';
+  script-src 'unsafe-inline';
+  style-src 'unsafe-inline' https://fonts.googleapis.com;
+  font-src https://fonts.gstatic.com;
+  img-src 'self' data:;
+  connect-src 'self' ws: wss:;
+  base-uri 'none';
+  form-action 'none';">
+
+<title>Don't Fall In — Paper Pencil Precision Browser Game</title>
+
+<!-- Primary SEO Meta Tags -->
+<meta name="title" content="Don't Fall In — Paper Pencil Precision Browser Game">
+<meta name="description" content="Guide a pencil across a paper full of holes without falling through. Play single player across 12 levels or race a friend online on two phones in real-time!">
+<meta name="keywords" content="Don't Fall In, paper game, pencil game, precision browser game, web game, multiplayer race, online browser game, canvas game, webgame">
+<meta name="author" content="Don't Fall In Game Team">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+<link rel="canonical" href="./">
+
+<!-- Open Graph / Facebook / Discord (SEO & Social Sharing) -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="Don't Fall In — Paper Pencil Precision Browser Game">
+<meta property="og:description" content="Guide a pencil across a paper full of holes without falling through. Play single player or race a friend on two phones!">
+<meta property="og:site_name" content="Don't Fall In">
+
+<!-- Twitter Cards -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Don't Fall In — Paper Pencil Precision Browser Game">
+<meta name="twitter:description" content="Guide a pencil across a paper full of holes without falling through. Single player & 2-player phone race!">
+
+<!-- JSON-LD Structured Data for VideoGame / WebApplication (SEO & GEO AI Agent Indexing) -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "VideoGame",
+  "name": "Don't Fall In",
+  "url": "https://dont-fall-in.pages.dev/",
+  "description": "Guide a pencil across a paper full of holes without falling through. Features 12 single player levels, 2-player shared screen duel, and real-time 2-phone multiplayer race.",
+  "genre": ["Action", "Arcade", "Puzzle", "Precision"],
+  "gamePlatform": ["Web Browser", "Mobile Browser", "Desktop Browser"],
+  "operatingSystem": "Any",
+  "applicationCategory": "Game",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD",
+    "availability": "https://schema.org/InStock"
+  },
+  "author": {
+    "@type": "Organization",
+    "name": "Don't Fall In Game Team"
+  }
+}
+</script>
+
+<!-- JSON-LD Structured Data for FAQPage (Generative Engine Optimization - AI Agent Search Extraction) -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is Don't Fall In?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Don't Fall In is a minimalist browser game where players press a pencil up from underneath a sheet of paper full of holes and drag the paper bump to the top without touching or falling through any holes."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do you play Don't Fall In on two phones?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "In Two Phones mode, one player hosts a room to generate a 4-digit code. The second player joins using the code. Both players race simultaneously under the same sheet layout in real-time."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is Don't Fall In free to play?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes, Don't Fall In is completely free to play directly in any desktop or mobile web browser with no downloads required."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What controls work in Don't Fall In?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Players can use touch drag on mobile screens, mouse drag on desktop, or arrow keys and WASD keys on a keyboard to control the pencil bump."
+      }
+    }
+  ]
+}
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bevan&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --desk:     #191B21;
+    --paper:    #EDE6D3;
+    --rule:     #A8BCCB;
+    --margin:   #C0554C;
+    --graphite: #3B3F48;
+    --void:     #0B0C0F;
+    --card:     #1F222A;
+    --ink:      #E4DECB;
+    --dim:      #8D8B84;
+    --display:  'Bevan', Georgia, 'Times New Roman', serif;
+    --mono:     'Courier Prime', 'Courier New', Courier, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0; padding: 0;
+    width: 100%; height: 100%;
+    background: var(--desk);
+    overflow: hidden;
+    overscroll-behavior: none;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  #stage { position: fixed; inset: 0; }
+
+  canvas#game {
+    display: block;
+    width: 100%; height: 100%;
+    touch-action: none;
+  }
+
+  /* ---- HUD ---------------------------------------------------------- */
+  #hud {
+    position: absolute;
+    top: max(10px, env(safe-area-inset-top));
+    left: 0; right: 0;
+    display: flex;
+    justify-content: space-between;
+    padding: 0 16px;
+    font-family: var(--mono);
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    color: var(--dim);
+    pointer-events: none;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+  }
+  #hud.hidden { opacity: 0; }
+  #hud > * { transition: opacity 180ms linear; }
+
+  /* ---- Screens ------------------------------------------------------ */
+  #screens {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+    background: rgba(10, 11, 14, 0.62);
+    pointer-events: auto;
+  }
+  #screens[hidden] { display: none; }
+
+  .card {
+    width: 100%;
+    max-width: 340px;
+    background: var(--card);
+    border: 1px solid #2C303A;
+    border-radius: 4px;
+    padding: 28px 24px 24px;
+    box-shadow: 0 18px 44px rgba(0,0,0,0.6);
+    text-align: center;
+  }
+
+  .card h1 {
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: clamp(28px, 9vw, 38px);
+    line-height: 1.08;
+    letter-spacing: 0.01em;
+    color: var(--paper);
+    margin: 0 0 14px;
+  }
+  .card h2 {
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: clamp(22px, 7vw, 28px);
+    line-height: 1.15;
+    color: var(--paper);
+    margin: 0 0 12px;
+  }
+  .card p {
+    font-family: var(--mono);
+    font-size: 14px;
+    line-height: 1.62;
+    color: var(--dim);
+    margin: 0 0 10px;
+  }
+  .card p.tight { margin-bottom: 4px; }
+  .card .stat {
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--ink);
+    margin: 0 0 18px;
+    letter-spacing: 0.04em;
+  }
+  .rule {
+    height: 1px;
+    background: #2C303A;
+    margin: 18px 0 16px;
+  }
+
+  .card button {
+    display: block;
+    width: 100%;
+    margin-top: 10px;
+    padding: 14px 18px;
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #14161B;
+    background: var(--paper);
+    border: 1px solid var(--paper);
+    border-radius: 3px;
+    cursor: pointer;
+  }
+  .card button.ghost {
+    color: var(--ink);
+    background: transparent;
+    border-color: #3A3F4B;
+  }
+  .card button:active { transform: translateY(1px); }
+  button:focus-visible {
+    outline: 3px solid #E8C77A;
+    outline-offset: -4px;
+  }
+  .card button:focus-visible { outline-offset: 3px; }
+
+  .hint {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: #6E6C66;
+    margin: 16px 0 0;
+    line-height: 1.6;
+  }
+
+  /* ---- Room code ----------------------------------------------------
+     Scoped as .card p.code, not .code: the .card p rule above is more
+     specific than a bare class and would otherwise win. */
+  .card p.code {
+    font-family: var(--display);
+    font-size: 46px;
+    line-height: 1.1;
+    letter-spacing: 0.22em;
+    color: var(--paper);
+    margin: 6px 0 12px;
+    text-indent: 0.22em;   /* offset the trailing letter-space */
+  }
+  .card input.code-in {
+    display: block;
+    width: 100%;
+    margin: 4px 0 2px;
+    padding: 14px 10px;
+    font-family: var(--display);
+    font-size: 30px;
+    letter-spacing: 0.24em;
+    text-align: center;
+    text-indent: 0.24em;
+    color: var(--paper);
+    background: #14161B;
+    border: 1px solid #3A3F4B;
+    border-radius: 3px;
+  }
+  .card input.code-in:focus-visible {
+    outline: 3px solid #E8C77A;
+    outline-offset: 2px;
+  }
+  /* A name is prose, not a code: normal type, no wide tracking. */
+  .card input.name-in {
+    font-family: var(--mono);
+    font-size: 16px;          /* 16px or iOS zooms the page on focus */
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-indent: 0;
+    padding: 13px 14px;
+    margin-top: 14px;
+  }
+  .card input.name-in::placeholder { color: #6E6C66; font-weight: 400; }
+  .card p.waiting {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: #E8C77A;
+    margin: 18px 0 2px;
+    letter-spacing: 0.06em;
+  }
+
+  /* ---- Shake strips (two-player only) ------------------------------- */
+  #strips { position: absolute; inset: 0; pointer-events: none; }
+  #strips[hidden] { display: none; }
+
+  /* The touch target runs the full width of the un-punched margin, but the
+     visible band stops a bump-radius short of it. Otherwise the pencil parked
+     against its clamp would have half the bump — and the graphite dot marking
+     the tip — sitting underneath the strip. */
+  .strip {
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 56px;
+    margin: 0;
+    border: 0;
+    background: transparent;
+    pointer-events: auto;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 22px;
+    -webkit-user-select: none; user-select: none;
+  }
+  .strip::before {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0;
+    width: var(--band, 100%);
+    background: rgba(20, 22, 28, 0.62);
+    transition: background 90ms linear;
+  }
+  .strip > * { position: relative; }
+
+  .strip.left  { left: 0;  padding-right: calc(100% - var(--band, 100%)); }
+  .strip.right { right: 0; padding-left:  calc(100% - var(--band, 100%)); }
+  .strip.left::before  { left: 0;  border-right: 1px solid rgba(168,188,203,0.14); }
+  .strip.right::before { right: 0; border-left:  1px solid rgba(168,188,203,0.14); }
+
+  .strip.flash::before { background: rgba(232, 199, 122, 0.26); }
+  .strip.empty { opacity: 0.4; }
+
+  .strip .label {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.34em;
+    text-transform: uppercase;
+    color: #A9A69C;
+  }
+  .strip.right .label { transform: rotate(180deg); }
+
+  .pips { display: flex; flex-direction: column; gap: 8px; }
+  .pip {
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: rgba(237, 230, 211, 0.16);
+    box-shadow: inset 0 0 0 1px rgba(237,230,211,0.22);
+    transition: background 120ms linear;
+  }
+  .pip.on { background: var(--paper); box-shadow: none; }
+</style>
+</head>
+<body>
+
+<noscript>
+  <div style="padding:24px; color:#EDE6D3; background:#191B21; font-family:sans-serif; max-width:600px; margin:0 auto;">
+    <h1>Don't Fall In — Paper Pencil Precision Browser Game</h1>
+    <p>Guide a pencil bump across a paper full of holes without falling through. Features 12 single player levels, 2-player same-phone duel, and 2-phone online race.</p>
+    <h2>Features</h2>
+    <ul>
+      <li>Single Player: 12 progressively challenging levels.</li>
+      <li>2-Player Same Phone: One drags the pencil, one shakes the paper.</li>
+      <li>2-Player Online Race: Real-time 2-phone race via 4-digit room code.</li>
+    </ul>
+    <h2>Controls</h2>
+    <p>Touch &amp; Drag on mobile, Mouse Drag on desktop, or Arrow keys / WASD on keyboard.</p>
+  </div>
+</noscript>
+
+<div id="stage">
+  <canvas id="game"></canvas>
+
+  <div id="hud">
+    <span id="hud-sheet">SHEET 1 / 12</span>
+    <span id="hud-time">0.0</span>
+  </div>
+
+  <div id="strips" hidden>
+    <button class="strip left" id="strip-l" aria-label="Shake the sheet from the left">
+      <span class="label">Shake</span>
+      <span class="pips" id="pips-l"></span>
+    </button>
+    <button class="strip right" id="strip-r" aria-label="Shake the sheet from the right">
+      <span class="label">Shake</span>
+      <span class="pips" id="pips-r"></span>
+    </button>
+  </div>
+
+  <div id="screens">
+    <div class="card" id="card" role="dialog" aria-modal="true" aria-labelledby="card-title"></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/* ═══════════════════════════════════════════════════════════════════════
+   TUNING — the numbers worth changing are all here.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+const T = {
+  // --- Difficulty curve (level is 1-based; at level 12 both clamps bite) ---
+  //
+  // Small holes, lots of them. The governing constraint is that a hole blocks
+  // a disc of (radius + TIP_RADIUS + 1), so a crossable corridor needs
+  //     spacing > 2 * (radius + TIP_RADIUS + 1)
+  // and everything below is chosen to keep that positive to the last level:
+  //
+  //   lv | radius spacing | holes | corridor | honest | straight-line lanes
+  //    1 |    5.4    54.1 |    96 |   32.3px |   100% | 14.0%
+  //    4 |    6.6    48.4 |   119 |   24.2px |   100% |  2.6%
+  //    8 |    8.2    40.8 |   160 |   13.4px |   100% |  0.1%
+  //   10 |    9.0    37.0 |   189 |    8.0px |   100% |  0.0%
+  //   12 |    9.5    34.0 |   230 |    4.0px |    94% |  0.0%
+  //
+  // The last column is the share of straight vertical lines that reach the
+  // finish untouched — the trivial-win rate. Level 1 is meant to be winnable
+  // by luck; from level 10 there is no straight line through at all.
+  //
+  // Shrink the radius further and the counts climb again, but the corridor
+  // closes: a 8.5 cap at 30 spacing drops level 12 to a 16% pass rate and the
+  // prune-until-passable fallback starts eating holes at random, which looks
+  // chewed rather than tight. If you widen these holes, raise the spacing to
+  // match or that fallback is what you will get.
+  LEVELS:            12,
+  spacingFor: (lv) => Math.max(34, 56 - lv * 1.9),
+  radiusFor:  (lv) => Math.min(9.5, 5.0 + lv * 0.4),
+  JITTER_FRAC:       0.30,   // jitter = spacing * this
+  RADIUS_VARY:       0.18,   // per-hole radius varies +/- this fraction
+
+  // --- Feel ---
+  TIP_RADIUS:        4.5,    // clearance assumed by the solvability check;
+                             // scaled down with the holes to keep the verifier
+                             // honest rather than over-cautious
+  HOLE_FORGIVENESS:  1.5,    // px shaved off hole radius for the fall test
+  COLLISION_STEP:    1.5,    // segment sampling interval, px
+  GRAB_RADIUS_PX:    46,     // press must land this close (screen px) to grab
+  MIN_ABOVE_FINGER:  26,     // bump is nudged at least this far above the touch
+  KEY_SPEED:         320,    // arrow-key travel, virtual px/sec
+
+  // --- Sheet layout (virtual units) ---
+  START_BAND:        92,     // hole-free band at the bottom of the paper
+  FINISH_BAND:       84,     // hole-free band at the top of the paper
+  PLAY_INSET:        46,     // clean un-punched margin down each side of the
+                             // sheet. Doubles as the tip clamp — see PLAY_LEFT
+  WALL_INSET:        6,      // flood-fill blocks this far inside the band
+
+  // --- Two players on one device ---
+  TWO_P_LEVEL:       6,      // the duel runs one sheet; this is its difficulty
+  SHAKE_STIFFNESS:   190,    // spring pulling the printed surface back
+  SHAKE_DAMPING:     11,     // under-damped, so it overshoots and settles
+  SHAKE_IMPULSE:     430,    // sideways kick per shake, virtual px/sec
+  SHAKE_CHARGES:     3,      // shakes the holder can hold at once
+  SHAKE_RECHARGE_MS: 3000,   // one charge back every this long
+  SHAKE_STRIP:       56,     // strip width in VIRTUAL units — never screen px,
+                             // or two phones would disagree over the network
+
+  // --- Two players on two phones (a race: both drag, nobody holds) ---
+  RACE_COUNTDOWN_MS: 2600,   // both phones count down together before GO, so
+                             // the start is not skewed by who tapped begin
+  MAX_NAME:          14,     // characters kept from a player's name, enforced
+                             // on entry AND again on arrival from the peer
+  RACE_START_SPLIT:  62,     // how far either side of centre each pencil starts.
+                             // Not lanes: the start band is hole-free right
+                             // across, so either player can walk sideways to
+                             // any entry point before climbing
+  TIP_SEND_MS:       45,     // pencil broadcasts its position this often.
+                             // Just under 50 on purpose: the check runs once a
+                             // frame, so 50 would quantise to every 4th frame
+                             // (15/s) at 60fps rather than every 3rd (20/s)
+
+  // --- Solvability ---
+  FILL_GRID:         5,      // flood-fill cell size, px
+  MAX_ATTEMPTS:      40,     // regenerate this many times before pruning
+
+  // --- Presentation ---
+  BUMP_RADIUS:       15,     // visual size of the paper bump
+  SHAKE_MS:          420,
+  SHAKE_MAG:         9,
+};
+
+/* The play field is a fixed virtual portrait rectangle, scaled and
+   letterboxed onto whatever screen we get. Everything in the game logic is
+   expressed in these units, so the same seed yields the same sheet on any
+   device — which is what Phase 3 depends on. */
+const V = { W: 420, H: 780 };
+const PAPER = { x: 10, y: 14, w: 400, h: 752 };
+
+/* The punched band. Holes sit in the middle of the sheet, leaving a clean
+   printed margin down either side — and the tip is confined to exactly the
+   same band. Those two have to move together: a hole-free margin the tip
+   could still enter is just a free corridor to slide up, which would make
+   every sheet trivial. Out of bounds and un-punched are the same edge. */
+/* The band is additionally held clear of the shake strips, and BOTH modes use
+   these same bounds — for the tip clamp and for the flood fill alike. If one
+   player mode allowed a wider corridor than the other, a sheet verified in one
+   could be uncrossable in the other, and the duel runs the identical sheet for
+   both players. Virtual units throughout, so two phones agree in Phase 3. */
+const PLAY_LEFT  = Math.max(PAPER.x + T.PLAY_INSET, T.SHAKE_STRIP);
+const PLAY_RIGHT = Math.min(PAPER.x + PAPER.w - T.PLAY_INSET, V.W - T.SHAKE_STRIP);
+const PLAY_W     = PLAY_RIGHT - PLAY_LEFT;
+
+const HOLE_MIN_Y = PAPER.y + T.FINISH_BAND;
+const HOLE_MAX_Y = PAPER.y + PAPER.h - T.START_BAND;
+const FINISH_Y   = PAPER.y + T.FINISH_BAND;
+const START_Y    = PAPER.y + PAPER.h - 44;
+const START_X    = PAPER.x + PAPER.w / 2;
+
+const C = {
+  desk:     '#191B21',
+  paper:    '#EDE6D3',
+  rule:     '#A8BCCB',
+  margin:   '#C0554C',
+  graphite: '#3B3F48',
+  void:     '#0B0C0F',
+};
+
+/*
+ * Race identities. Keyed by role, NOT by whose screen it is, so a player is
+ * the same colour on both phones — "I'm the red one" has to be true for both
+ * of you or it is worse than no colour at all.
+ *
+ * Two pencils you would actually find in a pencil case: graphite and a red
+ * marking pencil. Only the tip is tinted; the bump itself is lifted paper and
+ * stays paper-coloured whoever is underneath it.
+ */
+/*
+ * Two colours per player, and they are not the same colour:
+ *   dot/halo — the tip on the canvas, sitting on pale paper, so it is DARK
+ *   ui       — the same identity as a label on a dark card, so it is LIGHT
+ * Using the canvas colour for text puts near-black graphite on a near-black
+ * card, which is unreadable.
+ */
+const PLAYER = {
+  host:  { name: 'Graphite', ui: '#B9BEC9',
+           dot: 'rgba(43,46,54,0.94)',   halo: 'rgba(59,63,72,0.20)' },
+  guest: { name: 'Red',      ui: '#D8695C',
+           dot: 'rgba(168,58,46,0.94)',  halo: 'rgba(168,58,46,0.22)' },
+};
+
+const otherRole = (r) => (r === 'guest' ? 'host' : 'guest');
+
+/** Never throws on an unset role — a colour lookup must not take out a screen. */
+const inkFor = (role) => PLAYER[role] || PLAYER.host;
+
+/** Where each pencil begins. Host to the left of centre, guest to the right. */
+function startXFor(role) {
+  if (game.mode !== 'net') return START_X;
+  return role === 'guest' ? START_X + T.RACE_START_SPLIT
+                          : START_X - T.RACE_START_SPLIT;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SEEDED RANDOMNESS
+   Every random value that affects what the player sees runs through one of
+   these streams. Phase 3 replaces the seed source with the server's seed and
+   nothing else has to change.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** Seed for one sheet, derived from the run seed so a run is reproducible. */
+function sheetSeed(runSeed, level) {
+  return (runSeed + Math.imul(level, 0x9E3779B1)) >>> 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SHEET GENERATION
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/** Irregular 11-point outline factors, so holes read as punched not drilled. */
+function polyFactors(rand) {
+  const f = [];
+  for (let i = 0; i < 11; i++) f.push(0.93 + rand() * 0.14);
+  return f;
+}
+
+/**
+ * Lay holes out on an offset (staggered) grid with jitter and varied radii.
+ *
+ * Every row also gets a guard hole pinned to each edge of the band. Without
+ * them the staggered rows leave a clear lane straight up the boundary, and
+ * since the tip clamps to exactly that boundary the whole sheet can be beaten
+ * by holding against the edge and pulling up. Big holes used to cover the
+ * boundary incidentally; small ones do not, so the coverage is made explicit.
+ */
+function layoutHoles(rand, spacing, radius, jitter) {
+  const holes = [];
+  const rowStep = spacing * 0.86;
+
+  // Draw order is fixed so a given seed always yields the same sheet.
+  const makeHole = (x, y, guardEdge) => {
+    const r = radius * (1 - T.RADIUS_VARY + rand() * T.RADIUS_VARY * 2);
+    // A guard may only wander as far as it can while still covering the edge
+    // it is guarding — otherwise it stops being a guard.
+    const spread = guardEdge
+      ? Math.min(jitter, Math.max(0, r - T.HOLE_FORGIVENESS - 0.5))
+      : jitter;
+    const hx = Math.max(PLAY_LEFT, Math.min(PLAY_RIGHT, x + (rand() * 2 - 1) * spread));
+    const hy = Math.max(HOLE_MIN_Y, Math.min(HOLE_MAX_Y, y + (rand() * 2 - 1) * jitter));
+    holes.push({ x: hx, y: hy, r, shape: polyFactors(rand) });
+  };
+
+  let row = 0;
+  for (let y = HOLE_MIN_Y + rowStep * 0.5; y <= HOLE_MAX_Y; y += rowStep, row++) {
+    const stagger = (row % 2) ? spacing / 2 : 0;
+
+    makeHole(PLAY_LEFT, y, true);
+    makeHole(PLAY_RIGHT, y, true);
+
+    // No columns are skipped near the guards. Letting one occasionally land on
+    // top of a guard costs a redundant hole; skipping them opens a dead lane
+    // just inside the edge, which is far worse.
+    for (let x = PLAY_LEFT + stagger; x <= PLAY_RIGHT; x += spacing) {
+      makeHole(x, y, false);
+    }
+  }
+  return holes;
+}
+
+/**
+ * Flood fill on a coarse grid: can the tip get from the start band to the
+ * finish band at all? Cells are blocked within (hole radius + tip radius + 1)
+ * of a hole centre, and along both side walls so the tip cannot simply slide
+ * up the edge of the paper.
+ */
+function isPassable(holes) {
+  const g = T.FILL_GRID;
+  const cols = Math.ceil(PLAY_W / g);
+  const rows = Math.ceil(PAPER.h / g);
+  const blocked = new Uint8Array(cols * rows);
+
+  // Side walls.
+  const wallCells = Math.ceil(T.WALL_INSET / g);
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < wallCells; c++) {
+      blocked[r * cols + c] = 1;
+      blocked[r * cols + (cols - 1 - c)] = 1;
+    }
+  }
+
+  // Stamp each hole's blocked disc rather than testing every cell against
+  // every hole — keeps 40 regeneration attempts imperceptible.
+  for (const h of holes) {
+    const rr = h.r + T.TIP_RADIUS + 1;
+    const rr2 = rr * rr;
+    const cx = (h.x - PLAY_LEFT) / g;
+    const cy = (h.y - PAPER.y) / g;
+    const span = rr / g;
+    const c0 = Math.max(0, Math.floor(cx - span)), c1 = Math.min(cols - 1, Math.ceil(cx + span));
+    const r0 = Math.max(0, Math.floor(cy - span)), r1 = Math.min(rows - 1, Math.ceil(cy + span));
+    for (let r = r0; r <= r1; r++) {
+      const py = PAPER.y + (r + 0.5) * g;
+      const dy = py - h.y;
+      for (let c = c0; c <= c1; c++) {
+        const px = PLAY_LEFT + (c + 0.5) * g;
+        const dx = px - h.x;
+        if (dx * dx + dy * dy < rr2) blocked[r * cols + c] = 1;
+      }
+    }
+  }
+
+  // BFS up from the bottom row.
+  const seen = new Uint8Array(cols * rows);
+  const queue = new Int32Array(cols * rows);
+  let head = 0, tail = 0;
+  for (let c = 0; c < cols; c++) {
+    const i = (rows - 1) * cols + c;
+    if (!blocked[i]) { seen[i] = 1; queue[tail++] = i; }
+  }
+  while (head < tail) {
+    const i = queue[head++];
+    const r = (i / cols) | 0, c = i - r * cols;
+    if (r === 0) return true;
+    if (c > 0)        { const n = i - 1;    if (!seen[n] && !blocked[n]) { seen[n] = 1; queue[tail++] = n; } }
+    if (c < cols - 1) { const n = i + 1;    if (!seen[n] && !blocked[n]) { seen[n] = 1; queue[tail++] = n; } }
+    if (r > 0)        { const n = i - cols; if (!seen[n] && !blocked[n]) { seen[n] = 1; queue[tail++] = n; } }
+    if (r < rows - 1) { const n = i + cols; if (!seen[n] && !blocked[n]) { seen[n] = 1; queue[tail++] = n; } }
+  }
+  return false;
+}
+
+/**
+ * Build a sheet that is guaranteed crossable. A sheet the player cannot get
+ * through must never reach the screen, so we verify before returning and fall
+ * back to deleting holes if the layout parameters are simply too mean.
+ */
+function generateSheet(level, seed) {
+  const spacing = T.spacingFor(level);
+  const radius  = T.radiusFor(level);
+  const jitter  = spacing * T.JITTER_FRAC;
+
+  const rand = mulberry32(seed);
+  let holes = null;
+
+  for (let attempt = 0; attempt < T.MAX_ATTEMPTS; attempt++) {
+    holes = layoutHoles(rand, spacing, radius, jitter);
+    if (isPassable(holes)) {
+      return { level, seed, spacing, radius, holes };
+    }
+  }
+
+  // Nothing passed in 40 tries: thin the sheet out until something does.
+  while (holes.length > 0 && !isPassable(holes)) {
+    holes.splice(Math.floor(rand() * holes.length), 1);
+  }
+  return { level, seed, spacing, radius, holes };
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   OFFSCREEN LAYERS
+   Two of them, deliberately:
+     paperLayer — the sheet itself: shadow, fibre, vignette. Never moves.
+     printLayer — what is printed and punched: rule lines, then holes on top.
+                  Phase 2 slides this sideways when the holder shakes.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+const PRINT_MARGIN = 56;   // extra width so a sideways slide never shows a gap
+
+let paperLayer = null;
+let printLayer = null;
+let layerScale = 0;
+
+function makeLayer(w, h, rs) {
+  const cv = document.createElement('canvas');
+  cv.width  = Math.ceil(w * rs);
+  cv.height = Math.ceil(h * rs);
+  const c = cv.getContext('2d');
+  c.scale(rs, rs);
+  return { cv, c };
+}
+
+function buildPaperLayer(rs, seed) {
+  const pad = 26;                      // room for the drop shadow onto the desk
+  const { cv, c } = makeLayer(PAPER.w + pad * 2, PAPER.h + pad * 2, rs);
+  const rand = mulberry32(seed ^ 0x5F356495);
+
+  // Drop shadow onto the desk.
+  c.save();
+  c.shadowColor = 'rgba(0,0,0,0.55)';
+  c.shadowBlur = 20;
+  c.shadowOffsetX = 2;
+  c.shadowOffsetY = 8;
+  c.fillStyle = C.paper;
+  c.fillRect(pad, pad, PAPER.w, PAPER.h);
+  c.restore();
+
+  c.save();
+  c.beginPath();
+  c.rect(pad, pad, PAPER.w, PAPER.h);
+  c.clip();
+
+  // Aged base.
+  c.fillStyle = C.paper;
+  c.fillRect(pad, pad, PAPER.w, PAPER.h);
+
+  // Fibre speckle — half light, half dark, roughly a pixel each.
+  const dots = Math.round((PAPER.w * PAPER.h) / 118);
+  for (let i = 0; i < dots; i++) {
+    const x = pad + rand() * PAPER.w;
+    const y = pad + rand() * PAPER.h;
+    c.fillStyle = (rand() < 0.5)
+      ? 'rgba(255,255,248,0.42)'
+      : 'rgba(74,62,42,0.16)';
+    c.fillRect(x, y, 1, 1);
+  }
+
+  // Vignette: corners age darker than the middle.
+  const vg = c.createRadialGradient(
+    pad + PAPER.w / 2, pad + PAPER.h / 2, PAPER.w * 0.24,
+    pad + PAPER.w / 2, pad + PAPER.h / 2, PAPER.h * 0.62
+  );
+  vg.addColorStop(0.00, 'rgba(96,78,48,0)');
+  vg.addColorStop(0.62, 'rgba(96,78,48,0.07)');
+  vg.addColorStop(1.00, 'rgba(72,56,32,0.26)');
+  c.fillStyle = vg;
+  c.fillRect(pad, pad, PAPER.w, PAPER.h);
+
+  c.restore();
+  return { cv, c, pad };
+}
+
+/**
+ * One hole: pale torn lip, brown ring, then the near-black void.
+ *
+ * The lip and ring are scaled by the specified 1.18x / 1.10x, but with an
+ * absolute floor as well. A bare 1.18x lip on a 6px hole is barely a pixel and
+ * vanishes against the paper, leaving something that reads as a printed dot
+ * rather than a punched hole. The floor is deliberately small — push it much
+ * past 2px and these holes turn into thick pale donuts instead.
+ */
+function drawHole(c, h) {
+  const lipR  = Math.max(h.r * 1.18, h.r + 1.9);
+  const ringR = Math.max(h.r * 1.10, h.r + 1.0);
+
+  const path = (radius) => {
+    c.beginPath();
+    for (let i = 0; i < 11; i++) {
+      const a = (i / 11) * Math.PI * 2;
+      const r = radius * h.shape[i];
+      const x = h.x + Math.cos(a) * r;
+      const y = h.y + Math.sin(a) * r;
+      if (i === 0) c.moveTo(x, y); else c.lineTo(x, y);
+    }
+    c.closePath();
+  };
+
+  // Torn lip — paper fibres pushed up and lightened by the punch, catching
+  // the light from above. Shadows scale with the hole so a small one is not
+  // swamped by its own blur.
+  c.save();
+  c.shadowColor = 'rgba(84,64,36,0.30)';
+  c.shadowBlur = Math.min(3.5, h.r * 0.45);
+  c.shadowOffsetY = 1.0;
+  path(lipR);
+  c.fillStyle = '#FBF7EA';
+  c.fill();
+  c.restore();
+
+  // Brown ring — the bruised, dirtied edge of the tear.
+  path(ringR);
+  c.fillStyle = 'rgba(118,86,48,0.78)';
+  c.fill();
+
+  // The void, with a soft shadow bleeding onto the ring around it.
+  c.save();
+  c.shadowColor = 'rgba(16,11,4,0.75)';
+  c.shadowBlur = Math.min(4, h.r * 0.5);
+  c.shadowOffsetY = 1;
+  path(h.r);
+  c.fillStyle = C.void;
+  c.fill();
+  c.restore();
+}
+
+function buildPrintLayer(rs, sheet) {
+  const w = PAPER.w + PRINT_MARGIN * 2;
+  const { cv, c } = makeLayer(w, PAPER.h, rs);
+
+  // Local coords: paper origin sits at (PRINT_MARGIN, 0).
+  const ox = PRINT_MARGIN;
+
+  // Blue rules. Perfectly straight, edge to edge — they do not bend around
+  // the bump, because the bump is the pencil, not a lens.
+  c.strokeStyle = C.rule;
+  c.lineWidth = 1;
+  c.globalAlpha = 0.72;
+  for (let y = 58.5; y < PAPER.h - 24; y += 28) {
+    c.beginPath();
+    c.moveTo(0, y);
+    c.lineTo(w, y);
+    c.stroke();
+  }
+
+  // Red margin rule.
+  c.strokeStyle = C.margin;
+  c.globalAlpha = 0.55;
+  c.lineWidth = 1.4;
+  c.beginPath();
+  c.moveTo(ox + 46.5, 0);
+  c.lineTo(ox + 46.5, PAPER.h);
+  c.stroke();
+  c.globalAlpha = 1;
+
+  // Start and finish markers, drawn under the holes like everything printed.
+  c.save();
+  c.setLineDash([5, 6]);
+  c.strokeStyle = 'rgba(59,63,72,0.42)';
+  c.lineWidth = 1.2;
+  // Spanning the band rather than the sheet, so the dashes double as a hint
+  // at where the tip may actually travel.
+  const bandL = ox + (PLAY_LEFT - PAPER.x);
+  const bandR = ox + (PLAY_RIGHT - PAPER.x);
+  c.beginPath();
+  c.moveTo(bandL, FINISH_Y - PAPER.y);
+  c.lineTo(bandR, FINISH_Y - PAPER.y);
+  c.stroke();
+  c.beginPath();
+  c.moveTo(bandL, HOLE_MAX_Y - PAPER.y);
+  c.lineTo(bandR, HOLE_MAX_Y - PAPER.y);
+  c.stroke();
+  c.restore();
+
+  c.fillStyle = 'rgba(59,63,72,0.5)';
+  c.font = '11px "Courier Prime", monospace';
+  c.textAlign = 'center';
+  c.fillText('FINISH', ox + PAPER.w / 2, FINISH_Y - PAPER.y - 9);
+  c.fillText('START',  ox + PAPER.w / 2, HOLE_MAX_Y - PAPER.y + 20);
+
+  // Holes last: they are punched through the printed page, so they sit on
+  // top of the rule lines rather than under them.
+  c.save();
+  c.translate(ox - PAPER.x, -PAPER.y);
+  for (const h of sheet.holes) drawHole(c, h);
+  c.restore();
+
+  return { cv, c };
+}
+
+function rebuildLayers() {
+  if (!game.sheet) return;
+  const rs = Math.min(3, dpr * view.scale);
+  paperLayer = buildPaperLayer(rs, game.sheet.seed);
+  printLayer = buildPrintLayer(rs, game.sheet);
+  layerScale = rs;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   VIEW — virtual field -> device pixels
+   ═══════════════════════════════════════════════════════════════════════ */
+
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+let dpr = 1;
+const view = { scale: 1, ox: 0, oy: 0, w: 0, h: 0 };
+
+function resize() {
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  dpr = Math.min(3, window.devicePixelRatio || 1);
+
+  canvas.width  = Math.round(w * dpr);
+  canvas.height = Math.round(h * dpr);
+  canvas.style.width  = w + 'px';
+  canvas.style.height = h + 'px';
+
+  view.w = w; view.h = h;
+  view.scale = Math.min(w / V.W, h / V.H);
+  view.ox = (w - V.W * view.scale) / 2;
+  view.oy = (h - V.H * view.scale) / 2;
+
+  rebuildLayers();
+  layoutStrips();
+}
+
+/** Screen (CSS px) -> virtual field coordinates. */
+function toVirtual(clientX, clientY) {
+  return {
+    x: (clientX - view.ox) / view.scale,
+    y: (clientY - view.oy) / view.scale,
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   GAME STATE
+   ═══════════════════════════════════════════════════════════════════════ */
+
+const game = {
+  state: 'title',        // title | ready | playing | fell | cleared | won
+  mode: '1p',            // 1p | 2p
+  runSeed: 0,
+  level: 1,
+  sheet: null,
+  tip: { x: START_X, y: START_Y },
+  target: { x: START_X, y: START_Y },   // where input wants the tip; the frame
+                                        // loop is what actually moves it
+  dragging: false,
+  pointerId: null,
+  grabDX: 0, grabDY: 0,
+  elapsed: 0,
+  best: 0,               // furthest fraction of the sheet crossed this attempt
+  keys: { left: false, right: false, up: false, down: false },
+  shake: 0,              // screen shake on falling in, ms remaining
+
+  // --- Two-player ---
+  surface: { x: 0, v: 0 },   // sideways offset of the printed sheet, and its
+                             // velocity. The tip never moves with it.
+  charges: 0,
+  rechargeT: 0,
+  round: 1,
+  results: [],           // one { crossed, progress, time } per round
+};
+
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function progressOf(y) {
+  const span = START_Y - FINISH_Y;
+  return Math.max(0, Math.min(1, (START_Y - y) / span));
+}
+
+function startRun() {
+  game.mode = '1p';
+  game.runSeed = (Math.random() * 0xFFFFFFFF) >>> 0;
+  game.level = 1;
+  loadSheet();
+}
+
+function loadSheet() {
+  game.sheet = generateSheet(game.level, sheetSeed(game.runSeed, game.level));
+  rebuildLayers();
+  startRound();
+}
+
+/** Reset everything about an attempt without touching the sheet itself. */
+function startRound() {
+  const sx = startXFor(net.role);
+  game.tip.x = sx;
+  game.tip.y = START_Y;
+  game.target.x = sx;
+  game.target.y = START_Y;
+  game.dragging = false;
+  game.pointerId = null;
+  game.elapsed = 0;
+  game.best = 0;
+  game.surface.x = 0;
+  game.surface.v = 0;
+  game.charges = T.SHAKE_CHARGES;
+  game.rechargeT = 0;
+  game.state = 'ready';
+  const px = startXFor(otherRole(net.role));
+  net.peerTip.x = px;   net.peerTip.y = START_Y;
+  net.peerShown.x = px; net.peerShown.y = START_Y;
+  updateHud();
+  updatePips();
+  setStripsVisible(amHolder());
+  showScreen(null);
+}
+
+/**
+ * Two players, one device. The sheet is generated ONCE and both rounds run it,
+ * so the comparison at the end is between two attempts at the same problem.
+ */
+function startDuel() {
+  game.mode = '2p';
+  game.runSeed = (Math.random() * 0xFFFFFFFF) >>> 0;
+  game.level = T.TWO_P_LEVEL;
+  game.sheet = generateSheet(game.level, sheetSeed(game.runSeed, game.level));
+  rebuildLayers();
+  game.round = 1;
+  game.results = [];
+  showScreen('roundready');
+}
+
+/**
+ * Two devices, one race. Both players get a pencil on the same sheet and drag
+ * at the same time — nobody is holding, so there is no shaking here.
+ *
+ * Each device judges only its OWN pencil. The peer's bump is drawn from the
+ * positions they broadcast and is never collided against; their fall is their
+ * device's verdict to report, not ours. The seed arrives from the server; the
+ * sheet itself never crosses the wire.
+ */
+function startRace(seed) {
+  game.mode = 'net';
+  net.pencil = true;
+  game.runSeed = seed >>> 0;
+  game.level = T.TWO_P_LEVEL;
+  game.sheet = generateSheet(game.level, sheetSeed(game.runSeed, game.level));
+  rebuildLayers();
+  game.round = 1;
+  game.results = [];
+  net.peerDone = null;
+  net.myDone = null;
+  const px = startXFor(otherRole(net.role));
+  net.peerTip.x = px;   net.peerTip.y = START_Y;
+  net.peerShown.x = px; net.peerShown.y = START_Y;
+  showScreen('lobby');
+}
+
+/** Whose device is judging collisions. In a race, everyone judges their own. */
+function amPencil() {
+  return game.mode !== 'net' || net.pencil;
+}
+
+function updateHud() {
+  if (game.mode === 'net') {
+    // A race shows both climbs, so you can see how close it is without having
+    // to read the other bump's height off the paper. Colour-coded to match the
+    // pencil tips, so there is no guessing which figure is whose.
+    const mine = Math.round((net.myDone ? net.myDone.progress : game.best) * 100);
+    const theirs = Math.round((net.peerDone ? net.peerDone.progress
+                                            : progressOf(net.peerTip.y)) * 100);
+    const me = inkFor(net.role), them = inkFor(otherRole(net.role));
+    // esc() is not optional here: peerLabel() is text the other phone chose.
+    hudSheet.innerHTML =
+      `<b style="color:${me.ui}">${esc(myLabel())} ${mine}%${net.myDone && !net.myDone.crossed ? ' OUT' : ''}</b>` +
+      ` · <b style="color:${them.ui}">${esc(peerLabel())} ${theirs}%${net.peerDone && !net.peerDone.crossed ? ' OUT' : ''}</b>`;
+  } else if (game.mode === '2p') {
+    hudSheet.textContent = `ROUND ${game.round} / 2 · PLAYER ${game.round}'s TURN`;
+  } else {
+    hudSheet.textContent = `LEVEL ${game.level} / ${T.LEVELS}`;
+  }
+  hudTime.textContent = fmt(game.elapsed);
+}
+
+/* ── The printed surface ────────────────────────────────────────────────
+   A shake is an impulse to the surface velocity; a damped spring drags it
+   back to zero. The pencil hand is steady, so the tip does not move with it
+   — which is exactly why collision has to be measured relative to the sheet.
+   ─────────────────────────────────────────────────────────────────────── */
+
+function stepSurface(dtMs) {
+  const s = game.surface;
+  if (s.x === 0 && s.v === 0) return;
+
+  // Sub-stepped: at stiffness 190 a single 50ms step would diverge.
+  let remaining = dtMs / 1000;
+  const H = 1 / 240;
+  while (remaining > 0) {
+    const h = Math.min(H, remaining);
+    s.v += (-T.SHAKE_STIFFNESS * s.x - T.SHAKE_DAMPING * s.v) * h;
+    s.x += s.v * h;
+    remaining -= h;
+  }
+  if (Math.abs(s.x) < 0.02 && Math.abs(s.v) < 0.02) { s.x = 0; s.v = 0; }
+}
+
+/**
+ * Kick the sheet. Runs on BOTH devices — the holder calls it the instant they
+ * tap, without waiting for the round trip, and the pencil calls it when the
+ * message lands. The two springs are integrated independently from the same
+ * impulse, so they drift by the one-way latency and then both settle to zero.
+ * That drift is cosmetic: only the pencil's device judges collisions.
+ */
+function applyShake(dir) {
+  game.surface.v += dir * T.SHAKE_IMPULSE;
+
+  // Checked immediately, not deferred to the next frame: the holder must be
+  // able to catch a stationary pencil that is already sitting on an edge.
+  if (amPencil() && game.state === 'playing' &&
+      tipInHole(game.tip.x - game.surface.x, game.tip.y)) onFell();
+}
+
+/**
+ * The holder's move, on a shared device only. dir: -1 shoves the sheet left,
+ * +1 right. Two phones play a race, where both players hold a pencil and
+ * nobody is holding the sheet — so no shake ever crosses the wire.
+ */
+function shakeSheet(dir) {
+  if (!amHolder() || game.state !== 'playing') return false;
+  if (game.charges < 1) return false;
+
+  game.charges--;
+  game.rechargeT = 0;
+  updatePips();
+  applyShake(dir);
+  return true;
+}
+
+/** Am I holding the sheet? Only ever true on a shared device. */
+function amHolder() { return game.mode === '2p'; }
+
+function isDuel() { return game.mode === '2p' || game.mode === 'net'; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   COLLISION
+   The tip is a single point. We walk the segment between the previous and
+   current position in small steps so that a fast flick cannot tunnel across a
+   hole, and we take whichever happens first along that path: reaching the
+   finish, or dropping through.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+function tipInHole(x, y) {
+  const holes = game.sheet.holes;
+  for (let i = 0; i < holes.length; i++) {
+    const h = holes[i];
+    const rr = h.r - T.HOLE_FORGIVENESS;
+    if (rr <= 0) continue;
+    const dx = x - h.x, dy = y - h.y;
+    if (dx * dx + dy * dy < rr * rr) return true;
+  }
+  return false;
+}
+
+/** Clamp a position to the punched band. */
+function clampX(x) { return Math.max(PLAY_LEFT, Math.min(PLAY_RIGHT, x)); }
+function clampY(y) { return Math.max(PAPER.y + 2, Math.min(PAPER.y + PAPER.h - 2, y)); }
+
+function setTarget(x, y) {
+  game.target.x = clampX(x);
+  game.target.y = clampY(y);
+}
+
+/**
+ * Advance the tip to (tx, ty) while the printed surface slides from surfFrom
+ * to surfTo, sweeping the path. Returns 'ok' | 'fell' | 'finish'.
+ *
+ * The sweep is measured in SURFACE space — the tip's path relative to the
+ * sheet — because both can be moving. Sweeping the two motions separately
+ * would trace an L rather than the true diagonal, and could step over a hole
+ * that the diagonal passes straight through.
+ */
+function advanceTip(tx, ty, surfFrom, surfTo) {
+  tx = clampX(tx);
+  ty = clampY(ty);
+
+  const x0 = game.tip.x, y0 = game.tip.y;
+  const dx = tx - x0, dy = ty - y0;
+
+  // Relative displacement decides the sampling density, so a shake that whips
+  // the paper past a motionless tip is sampled just as finely as a flick.
+  const rx0 = x0 - surfFrom, rx1 = tx - surfTo;
+  const dist = Math.hypot(rx1 - rx0, dy);
+  const steps = Math.max(1, Math.ceil(dist / T.COLLISION_STEP));
+
+  for (let i = 1; i <= steps; i++) {
+    const t = i / steps;
+    const y = y0 + dy * t;
+
+    if (y <= FINISH_Y) {
+      game.tip.x = x0 + dx * t; game.tip.y = FINISH_Y;
+      game.best = 1;
+      onFinish();
+      return 'finish';
+    }
+    if (tipInHole(rx0 + (rx1 - rx0) * t, y)) {
+      game.tip.x = x0 + dx * t; game.tip.y = y;
+      onFell();
+      return 'fell';
+    }
+    game.best = Math.max(game.best, progressOf(y));
+  }
+
+  game.tip.x = tx;
+  game.tip.y = ty;
+  return 'ok';
+}
+
+/** Move against the surface where it currently sits. */
+function moveTip(tx, ty) {
+  return advanceTip(tx, ty, game.surface.x, game.surface.x);
+}
+
+function onFell() {
+  game.state = 'fell';
+  game.dragging = false;
+  game.pointerId = null;
+  if (!reduceMotion) game.shake = T.SHAKE_MS;
+  if (isDuel()) return endRound(false);
+  showScreen('fell');
+}
+
+function onFinish() {
+  game.dragging = false;
+  game.pointerId = null;
+  game.state = 'cleared';
+  if (isDuel()) return endRound(true);
+  if (game.level >= T.LEVELS) {
+    game.state = 'won';
+    showScreen('won');
+    triggerVictoryFireworks(6);
+  } else {
+    showScreen('cleared');
+    triggerVictoryFireworks(3);
+  }
+}
+
+function endRound(crossed) {
+  if (game.mode === 'net') return raceDone(crossed);
+  game.results.push({ crossed, progress: game.best, time: game.elapsed });
+  setStripsVisible(false);
+  if (game.round === 2) {
+    const [a, b] = game.results;
+    const win = judgeDuel(a, b);
+    if ((win === 1 && a.crossed) || (win === 2 && b.crossed)) {
+      triggerVictoryFireworks(4);
+    }
+  }
+  showScreen(game.round === 1 ? 'roundover' : 'duelover');
+}
+
+/* ── Finishing a race ───────────────────────────────────────────────────
+   Two independent runs that happen to overlap in time. Whoever finishes
+   first waits and watches the other, because falling in early does not end
+   their run — the result is only decided once both are in.
+   ─────────────────────────────────────────────────────────────────────── */
+
+function raceDone(crossed) {
+  if (net.myDone) return;                       // already reported
+  net.myDone = { crossed, progress: game.best, time: game.elapsed };
+  netSend({ k: 'done', ...net.myDone });
+  settleRace();
+}
+
+/** They reported their own outcome; it is theirs to decide, not ours. */
+function peerDone(r) {
+  if (net.peerDone) return;
+  net.peerDone = {
+    crossed: !!r.crossed,
+    progress: readCoord(r.progress, 0, 1, 0),
+    time: readCoord(r.time, 0, 24 * 60 * 60 * 1000, 0),
+  };
+  settleRace();
+}
+
+function settleRace() {
+  if (!net.myDone) return;                      // still climbing
+
+  // Instant victory: If I crossed the finish line, I won the race!
+  // No need to wait for peer if I crossed first.
+  if (net.myDone.crossed) {
+    game.state = 'raceover';
+    game.dragging = false;
+    game.pointerId = null;
+    const peerRes = net.peerDone || { crossed: false, progress: progressOf(net.peerTip.y), time: game.elapsed };
+    game.results = [net.myDone, peerRes];
+    triggerVictoryFireworks(5);
+    showScreen('raceover');
+    return;
+  }
+
+  // If I fell and peer is still going, watch until they finish or fall.
+  if (!net.peerDone) {
+    game.state = 'watching';
+    game.dragging = false;
+    game.pointerId = null;
+    updateHud();
+    showScreen(null);
+    return;
+  }
+
+  // Both runs complete:
+  game.state = 'raceover';
+  game.results = [net.myDone, net.peerDone];
+  const win = judgeDuel(net.myDone, net.peerDone);
+
+  // Trigger fireworks ONLY if the winner actually crossed the finish line!
+  if ((win === 1 && net.myDone.crossed) || (win === 2 && net.peerDone.crossed)) {
+    triggerVictoryFireworks(5);
+  }
+
+  showScreen('raceover');
+}
+
+/**
+ * Crossing beats not crossing; then furthest progress; then fastest time.
+ * Returns 1, 2, or 0 for a dead heat.
+ */
+function judgeDuel(a, b) {
+  if (a.crossed !== b.crossed) return a.crossed ? 1 : 2;
+  if (Math.abs(a.progress - b.progress) > 1e-4) return a.progress > b.progress ? 1 : 2;
+  if (Math.abs(a.time - b.time) > 1) return a.time < b.time ? 1 : 2;
+  return 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   NETWORK — two phones, one relay
+   The server never sees a hole. Both devices generate the same sheet from the
+   one seed it hands out, the pencil's device is the only authority on
+   collisions, and everything below is a thin transport around that.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+const net = {
+  ws: null,
+  code: null,
+  role: null,          // 'host' | 'guest'
+  pencil: true,        // in a race both players hold a pencil, always
+  seed: 0,
+  myName: '',          // typed here; kept in memory only, never stored
+  peerName: '',        // typed on THEIR phone, so treated as hostile input
+  peerTip:   { x: START_X, y: START_Y },   // last position they reported
+  peerShown: { x: START_X, y: START_Y },   // eased, so 20 packets/sec is smooth
+  peerDone: null,      // { crossed, progress, time } once they finish
+  myDone: null,
+  countdown: 0,
+  lastSent: 0,
+  status: '',
+};
+
+/** Online play needs the page served over http; file:// has no server. */
+const canGoOnline = location.protocol === 'http:' || location.protocol === 'https:';
+
+function netSend(d) {
+  if (net.ws && net.ws.readyState === WebSocket.OPEN) {
+    net.ws.send(JSON.stringify({ t: 'msg', d }));
+  }
+}
+
+function netConnect(then) {
+  if (net.ws) {
+    if (net.ws.readyState === WebSocket.OPEN) { then(); return; }
+    if (net.ws.readyState === WebSocket.CONNECTING) {
+      // A second tap while the first is still dialling: queue behind it rather
+      // than opening a socket the server would count as another player.
+      const prev = net.ws.onopen;
+      net.ws.onopen = (e) => { if (prev) prev(e); then(); };
+      return;
+    }
+    closeSocket();
+  }
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  const ws = new WebSocket(`${proto}://${location.host}/ws`);
+  net.ws = ws;
+
+  ws.onopen = () => then();
+  ws.onerror = () => { net.status = 'Can\'t connect to the server.'; showScreen('netfail'); };
+  ws.onclose = () => {
+    net.ws = null;
+    if (game.mode === 'net') {
+      net.status = 'Connection lost.';
+      game.mode = '1p';
+      setStripsVisible(false);
+      showScreen('netfail');
+    }
+  };
+  ws.onmessage = (ev) => {
+    let m; try { m = JSON.parse(ev.data); } catch { return; }
+    handleServer(m);
+  };
+}
+
+function handleServer(m) {
+  switch (m.t) {
+    case 'room':
+      // Shape-check what the server hands back rather than trusting it.
+      net.code = /^\d{4}$/.test(String(m.code)) ? String(m.code) : null;
+      net.role = 'host';
+      showScreen('hosting');
+      break;
+
+    case 'ready':
+      net.role = m.role;
+      net.seed = m.seed >>> 0;
+      startRace(net.seed);
+      // Both sides fire this on pairing, so each learns the other's name.
+      netSend({ k: 'name', name: net.myName });
+      break;
+
+    case 'seed':
+      // A fresh sheet for both phones at once.
+      net.seed = m.seed >>> 0;
+      startRace(net.seed);
+      break;
+
+    case 'err':
+      net.status = String(m.m || 'Something went wrong.').slice(0, 120);
+      showScreen('netfail');
+      break;
+
+    case 'gone':
+      net.status = 'The other player left.';
+      game.mode = '1p';
+      game.state = 'title';
+      setStripsVisible(false);
+      showScreen('netfail');
+      break;
+
+    case 'msg':
+      handlePeer(m.d || {});
+      break;
+  }
+}
+
+/**
+ * Everything arriving from the other phone is untrusted. The relay forwards
+ * whatever it is handed, so a modified client can send anything at all — and
+ * a single non-finite coordinate reaching a canvas gradient throws, which used
+ * to take the whole render loop down with it.
+ */
+function readCoord(v, lo, hi, fallback) {
+  const n = typeof v === 'number' ? v : Number(v);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(lo, Math.min(hi, n));
+}
+
+/**
+ * A name is free text from the other phone that ends up inside a card and the
+ * HUD, both of which are built as HTML. Strip control characters, cap the
+ * length so it cannot blow out the layout, and rely on esc() at every render —
+ * belt and braces, because this is the one string a stranger fully controls.
+ */
+function cleanName(s) {
+  return String(s == null ? '' : s)
+    .replace(/[\u0000-\u001F\u007F-\u009F\u200B-\u200F\u2028\u2029]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, T.MAX_NAME);
+}
+
+/** Falls back to the pencil colour, which is a fine name on its own. */
+function myLabel()   { return net.myName   || inkFor(net.role).name; }
+function peerLabel() { return net.peerName || inkFor(otherRole(net.role)).name; }
+
+function handlePeer(d) {
+  if (!d || typeof d.k !== 'string') return;
+
+  switch (d.k) {
+    case 'begin':
+      // The host starts it, so there is no readiness handshake to get wrong.
+      startCountdown();
+      break;
+
+    case 'name':
+      net.peerName = cleanName(d.name);
+      if (game.mode === 'net') updateHud();
+      if (!screens.hidden) showScreen(currentScreen);   // repaint the open card
+      break;
+
+    case 'tip':
+      net.peerTip.x = readCoord(d.x, PLAY_LEFT, PLAY_RIGHT, net.peerTip.x);
+      net.peerTip.y = readCoord(d.y, PAPER.y, PAPER.y + PAPER.h, net.peerTip.y);
+      break;
+
+    case 'done':
+      peerDone(d);
+      break;
+  }
+}
+
+/** Host only: put both phones on the same countdown. */
+function beginRace() {
+  netSend({ k: 'begin' });
+  startCountdown();
+}
+
+/**
+ * Both phones count down locally before anyone can move. The two clocks start
+ * one network hop apart rather than one tap apart, which on a LAN is a couple
+ * of milliseconds against a 2.6 second lead-in.
+ */
+function startCountdown() {
+  net.peerDone = null;
+  net.myDone = null;
+  startRound();                  // seeds both start positions from the roles
+  net.countdown = T.RACE_COUNTDOWN_MS;
+  game.state = 'countdown';
+  showScreen(null);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   INPUT
+   ═══════════════════════════════════════════════════════════════════════ */
+
+canvas.addEventListener('pointerdown', (e) => {
+  if (game.state !== 'ready' && game.state !== 'playing') return;
+  if (!amPencil()) return;             // the holder does not get to drag
+  const p = toVirtual(e.clientX, e.clientY);
+  const grabR = T.GRAB_RADIUS_PX / view.scale;
+
+  if (Math.hypot(p.x - game.tip.x, p.y - game.tip.y) > grabR) return;
+
+  // Keep the offset from finger to bump, so the bump holds its distance and
+  // stays above the fingertip instead of hiding under it.
+  let dx = game.tip.x - p.x;
+  let dy = game.tip.y - p.y;
+  const minAbove = T.MIN_ABOVE_FINGER / view.scale;
+  if (dy > -minAbove) dy = -minAbove;
+
+  game.grabDX = dx;
+  game.grabDY = dy;
+  game.dragging = true;
+  game.pointerId = e.pointerId;
+  game.state = 'playing';
+  canvas.setPointerCapture(e.pointerId);
+
+  // Input only ever sets the target. The frame loop performs the swept move,
+  // so tip travel and sheet travel are resolved together.
+  setTarget(p.x + dx, p.y + dy);
+  e.preventDefault();
+}, { passive: false });
+
+canvas.addEventListener('pointermove', (e) => {
+  if (!game.dragging || e.pointerId !== game.pointerId) return;
+  const p = toVirtual(e.clientX, e.clientY);
+  setTarget(p.x + game.grabDX, p.y + game.grabDY);
+  e.preventDefault();
+}, { passive: false });
+
+function releasePointer(e) {
+  if (e.pointerId !== game.pointerId) return;
+  game.dragging = false;
+  game.pointerId = null;
+}
+canvas.addEventListener('pointerup', releasePointer);
+canvas.addEventListener('pointercancel', releasePointer);
+
+const KEY_MAP = {
+  ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down',
+  a: 'left', d: 'right', w: 'up', s: 'down',
+};
+
+window.addEventListener('keydown', (e) => {
+  // Alternate keys for the holder, so two people can share a keyboard.
+  if (amHolder() && (e.key === 'z' || e.key === 'Z')) { pressStrip(stripL, -1); return; }
+  if (amHolder() && (e.key === 'm' || e.key === 'M')) { pressStrip(stripR, +1); return; }
+
+  const k = KEY_MAP[e.key];
+  if (!k) return;
+  if (game.state !== 'ready' && game.state !== 'playing') return;
+  game.keys[k] = true;
+  game.state = 'playing';
+  e.preventDefault();
+});
+
+window.addEventListener('keyup', (e) => {
+  const k = KEY_MAP[e.key];
+  if (k) game.keys[k] = false;
+});
+
+/* ── Shake strips ──────────────────────────────────────────────────────
+   Real buttons, so they are focusable and announce themselves. They are DOM
+   rather than canvas because they are UI pinned to the screen, not part of
+   the sheet — and because a 56px thumb target should not have to be
+   hit-tested by hand.
+   ─────────────────────────────────────────────────────────────────────── */
+
+const stripsEl = document.getElementById('strips');
+const stripL = document.getElementById('strip-l');
+const stripR = document.getElementById('strip-r');
+const pipsL = document.getElementById('pips-l');
+const pipsR = document.getElementById('pips-r');
+
+for (const box of [pipsL, pipsR]) {
+  for (let i = 0; i < T.SHAKE_CHARGES; i++) {
+    const d = document.createElement('span');
+    d.className = 'pip';
+    box.appendChild(d);
+  }
+}
+
+function updatePips() {
+  for (const box of [pipsL, pipsR]) {
+    const kids = box.children;
+    for (let i = 0; i < kids.length; i++) kids[i].classList.toggle('on', i < game.charges);
+  }
+  const empty = game.charges < 1;
+  stripL.classList.toggle('empty', empty);
+  stripR.classList.toggle('empty', empty);
+}
+
+function pressStrip(el, dir) {
+  if (!shakeSheet(dir)) return;
+  el.classList.add('flash');
+  setTimeout(() => el.classList.remove('flash'), 110);
+}
+
+for (const [el, dir] of [[stripL, -1], [stripR, +1]]) {
+  el.addEventListener('pointerdown', (e) => { pressStrip(el, dir); e.preventDefault(); }, { passive: false });
+  // Keyboard activation of the focused button, without double-firing on tap.
+  el.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { pressStrip(el, dir); e.preventDefault(); }
+  });
+}
+
+function setStripsVisible(on) {
+  stripsEl.hidden = !on;
+  if (on) layoutStrips();
+}
+
+/** Strips span from the screen edge to the inner edge of the un-punched
+ *  margin, so they line up with the paper however the field is letterboxed. */
+function layoutStrips() {
+  const hit  = view.ox + T.SHAKE_STRIP * view.scale;
+  const band = view.ox + (T.SHAKE_STRIP - T.BUMP_RADIUS) * view.scale;
+  for (const el of [stripL, stripR]) {
+    el.style.width = hit + 'px';
+    el.style.setProperty('--band', band + 'px');
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SCREENS
+   ═══════════════════════════════════════════════════════════════════════ */
+
+const screens = document.getElementById('screens');
+const card = document.getElementById('card');
+const hud = document.getElementById('hud');
+const hudSheet = document.getElementById('hud-sheet');
+const hudTime = document.getElementById('hud-time');
+
+function fmt(t) { return (t / 1000).toFixed(1); }
+
+/**
+ * Cards are assembled as HTML strings, so anything that did not come from this
+ * file has to be escaped on the way in. The room code and the status line both
+ * originate at the server, and a server is exactly the thing you should not
+ * assume is friendly just because you started it.
+ */
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+/** Which card is up, so a late-arriving name can repaint it in place. */
+let currentScreen = null;
+
+function showScreen(kind) {
+  currentScreen = kind || null;
+  if (!kind) {
+    screens.hidden = true;
+    hud.classList.remove('hidden');
+    return;
+  }
+  screens.hidden = false;
+  hud.classList.add('hidden');
+
+  const pct = Math.round(game.best * 100);
+  let html = '';
+
+  if (kind === 'title') {
+    html = `
+      <h1 id="card-title">Don't<br>Fall In</h1>
+      <p>Guide a pencil through a paper full of holes.
+         Drag the bump from bottom to top without falling in!</p>
+      <p>If you touch a hole, you fall through and lose.</p>
+      <div class="rule"></div>
+      <button id="btn-primary">One player</button>
+      <button id="btn-secondary" class="ghost">Two players, one phone</button>
+      <button id="btn-third" class="ghost"${canGoOnline ? '' : ' disabled'}>Two phones</button>
+      <p class="hint">${canGoOnline
+        ? 'Tap and drag the bump. You can also use arrow keys.'
+        : 'To play on two phones, run <strong>node server.js</strong> on your computer and open the link it shows.'}</p>`;
+
+  } else if (kind === 'netmenu') {
+    html = `
+      <h2 id="card-title">Two phones</h2>
+      <p>Race! Both players get a pencil on the same sheet.</p>
+      <input class="code-in name-in" id="name-in" maxlength="${T.MAX_NAME}"
+             autocomplete="off" autocapitalize="words" spellcheck="false"
+             placeholder="Your name" aria-label="Your name"
+             value="${esc(net.myName)}">
+      <p class="hint" style="margin-top:6px">Optional. If you skip this,
+         your pencil color is your name.</p>
+      <div class="rule"></div>
+      <button id="btn-primary">Host a room</button>
+      <button id="btn-secondary" class="ghost">Join with a code</button>
+      <button id="btn-third" class="ghost">Back</button>`;
+
+  } else if (kind === 'hosting') {
+    html = `
+      <h2 id="card-title">Your room code</h2>
+      <p class="code">${esc(net.code) || '····'}</p>
+      <p>Tell this code to the other player. They tap <strong>Join with a code</strong>
+         and type it in.</p>
+      <p class="waiting">Waiting for the other player…</p>
+      <button id="btn-secondary" class="ghost">Cancel</button>`;
+
+  } else if (kind === 'joining') {
+    html = `
+      <h2 id="card-title">Enter room code</h2>
+      <p>Type the 4-digit code from the other player's phone.</p>
+      <input class="code-in" id="code-in" inputmode="numeric" pattern="[0-9]*"
+             maxlength="4" autocomplete="off" aria-label="Four digit room code">
+      <input class="code-in name-in" id="name-in" maxlength="${T.MAX_NAME}"
+             autocomplete="off" autocapitalize="words" spellcheck="false"
+             placeholder="Your name" aria-label="Your name"
+             value="${esc(net.myName)}">
+      <p class="hint" style="margin-top:6px">Optional. If you skip this,
+         your pencil color is your name.</p>
+      <button id="btn-primary">Join</button>
+      <button id="btn-secondary" class="ghost">Back</button>`;
+
+  } else if (kind === 'netfail') {
+    html = `
+      <h2 id="card-title">${esc(net.status) || 'Disconnected.'}</h2>
+      <p>Make sure both phones are on the same Wi-Fi and the server
+         is still running.</p>
+      <button id="btn-primary">Back to start</button>`;
+
+  } else if (kind === 'lobby') {
+    const me = inkFor(net.role), them = inkFor(otherRole(net.role));
+    const side = net.role === 'host' ? 'left' : 'right';
+    html = `
+      <h2 id="card-title">Race!</h2>
+      <p>Both players drag a pencil on the same sheet at the same time.</p>
+      <p class="tight"><strong style="color:${me.ui}">${esc(myLabel())}</strong>
+         (you) has the <strong>${me.name.toLowerCase()}</strong> pencil,
+         starting <strong>${side} of centre</strong>.</p>
+      <p><strong style="color:${them.ui}">${esc(peerLabel())}</strong> has the
+         ${them.name.toLowerCase()} one. Same colors on both screens.</p>
+      <div class="rule"></div>
+      <p>First to the top wins. If you fall through a hole, you're out
+         — but the other player still has to finish.</p>
+      <p class="stat">Same holes on both screens · no shaking</p>
+      ${net.role === 'host'
+        ? `<button id="btn-primary">Start the race</button>`
+        : `<p class="waiting">Waiting for the host to start…</p>`}
+      <button id="btn-secondary" class="ghost">Leave</button>`;
+
+  } else if (kind === 'raceover') {
+    const [me, them] = game.results;
+    const win = judgeDuel(me, them);
+    const line = (label, ui, r, mine) => `<p class="stat"><b style="color:${ui}">${esc(label)}</b>${
+      mine ? ' <span style="opacity:.5">(you)</span>' : ''
+    } &nbsp;·&nbsp; ${
+      r.crossed ? 'across' : Math.round(r.progress * 100) + '% up'
+    } &nbsp;·&nbsp; ${fmt(r.time)}s</p>`;
+    const winner = win === 1 ? myLabel() : peerLabel();
+    html = `
+      <h2 id="card-title">${win === 0 ? 'It\'s a tie!' : esc(winner) + ' wins!'}</h2>
+      ${line(myLabel(), inkFor(net.role).ui, me, true)}
+      ${line(peerLabel(), inkFor(otherRole(net.role)).ui, them, false)}
+      <div class="rule"></div>
+      <p>${win === 0
+            ? 'You both did equally well!'
+            : (me.crossed !== them.crossed
+                ? 'Making it across beats falling through.'
+                : (Math.abs(me.progress - them.progress) > 1e-4
+                    ? 'Got further up the paper.'
+                    : 'Same distance, but faster.'))}</p>
+      ${net.role === 'host'
+        ? `<button id="btn-primary">New sheet</button>`
+        : `<p class="waiting">Waiting for the host…</p>`}
+      <button id="btn-secondary" class="ghost">Leave</button>`;
+
+  } else if (kind === 'roundready') {
+    const who = game.round === 1 ? ['Player 1', 'Player 2'] : ['Player 2', 'Player 1'];
+    html = `
+      <h2 id="card-title">Round ${game.round} of 2</h2>
+      <p class="tight"><strong>${who[0]}</strong> drags the pencil.</p>
+      <p><strong>${who[1]}</strong> holds the paper. Tap the SHAKE strips
+         on the sides to shake the paper and make the other player fall!</p>
+      <div class="rule"></div>
+      <p class="stat">${T.SHAKE_CHARGES} shakes in hand · one back every
+         ${(T.SHAKE_RECHARGE_MS / 1000).toFixed(0)}s</p>
+      <p>${game.round === 1
+            ? 'Player 2 goes next on the same paper — same holes, fair match.'
+            : 'Same paper that Player 1 just played.'}</p>
+      <button id="btn-primary">Begin round ${game.round}</button>
+      <p class="hint">Paper holder: tap the side strips, or press Z / M keys.</p>`;
+  // roundover / duelover are the shared-device duel only. Two phones is a
+  // race now, and reports through 'raceover'.
+  } else if (kind === 'roundover') {
+    const r = game.results[0];
+    html = `
+      <h2 id="card-title">${r.crossed ? 'Made it across!' : 'Fell through!'}</h2>
+      <p class="tight">Player 1, on the pencil.</p>
+      <p class="stat">${Math.round(r.progress * 100)}% done &nbsp;·&nbsp; ${fmt(r.time)}s</p>
+      <p>Switch! Player 2 plays the same paper now.</p>
+      <button id="btn-primary">Round 2</button>`;
+
+  } else if (kind === 'duelover') {
+    const [a, b] = game.results;
+    const win = judgeDuel(a, b);
+    const line = (n, r) => `<p class="stat">Player ${n} &nbsp;·&nbsp; ${
+      r.crossed ? 'made it' : Math.round(r.progress * 100) + '% done'
+    } &nbsp;·&nbsp; ${fmt(r.time)}s</p>`;
+    html = `
+      <h2 id="card-title">${win === 0 ? 'It\'s a tie!' : 'Player ' + win + ' wins!'}</h2>
+      ${line(1, a)}${line(2, b)}
+      <div class="rule"></div>
+      <p>${win === 0
+            ? 'Both players did equally well!'
+            : (a.crossed !== b.crossed
+                ? 'Making it across beats falling through.'
+                : (Math.abs(a.progress - b.progress) > 1e-4
+                    ? 'Got further up the paper.'
+                    : 'Same distance, but faster.'))}</p>
+      <button id="btn-primary">New sheet</button>
+      <button id="btn-secondary" class="ghost">Back to start</button>`;
+
+  } else if (kind === 'fell') {
+    html = `
+      <h2 id="card-title">You fell through!</h2>
+      <p class="tight">Level ${game.level} of ${T.LEVELS}.</p>
+      <p class="stat">${pct}% done &nbsp;·&nbsp; ${fmt(game.elapsed)}s</p>
+      <button id="btn-primary">Try again</button>
+      <button id="btn-secondary" class="ghost">Back to start</button>`;
+  } else if (kind === 'cleared') {
+    html = `
+      <h2 id="card-title">Level complete!</h2>
+      <p class="tight">Level ${game.level} of ${T.LEVELS} done.</p>
+      <p class="stat">${fmt(game.elapsed)}s</p>
+      <p>Next level has more holes, packed tighter!</p>
+      <button id="btn-primary">Next level</button>`;
+  } else if (kind === 'won') {
+    html = `
+      <h2 id="card-title">You beat all<br>12 levels!</h2>
+      <p>You made it through every level without falling. Amazing job!</p>
+      <button id="btn-primary">Play again</button>`;
+  }
+
+  card.innerHTML = html;
+
+  const primary = card.querySelector('#btn-primary');
+  const secondary = card.querySelector('#btn-secondary');
+  const third = card.querySelector('#btn-third');
+
+  // The guest's lobby and result cards have no primary button at all — the
+  // host drives every transition, so there is no readiness handshake.
+  if (primary) primary.onclick = () => {
+    if (kind === 'title' || kind === 'won') startRun();
+    else if (kind === 'fell') loadSheet();
+    else if (kind === 'cleared') { game.level++; loadSheet(); }
+    // Two players, one device. The sheet is never regenerated between rounds.
+    else if (kind === 'roundready') startRound();
+    else if (kind === 'roundover') { game.round = 2; showScreen('roundready'); }
+    else if (kind === 'duelover') startDuel();
+    // Two phones — a race.
+    else if (kind === 'netmenu') netConnect(() => netAsk({ t: 'create' }));
+    else if (kind === 'joining') submitCode();
+    else if (kind === 'netfail') leaveOnline();
+    else if (kind === 'lobby') beginRace();
+    else if (kind === 'raceover') netAsk({ t: 'reseed' });   // server issues the seed
+  };
+
+  if (secondary) {
+    secondary.onclick = () => {
+      if (kind === 'title') return startDuel();
+      if (kind === 'netmenu') return showScreen('joining');
+      if (kind === 'joining' || kind === 'hosting') { closeSocket(); return showScreen('netmenu'); }
+      leaveOnline();
+    };
+  }
+
+  if (third) {
+    third.onclick = () => {
+      if (kind === 'title') { if (canGoOnline) showScreen('netmenu'); }
+      else if (kind === 'netmenu') leaveOnline();
+    };
+  }
+
+  // Kept live so the name survives moving between the menu and the code entry.
+  const nameIn = card.querySelector('#name-in');
+  if (nameIn) {
+    nameIn.addEventListener('input', () => { net.myName = cleanName(nameIn.value); });
+  }
+
+  const codeIn = card.querySelector('#code-in');
+  if (codeIn) {
+    codeIn.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitCode(); });
+    codeIn.focus({ preventScroll: true });
+  } else if (primary) {
+    primary.focus({ preventScroll: true });
+  }
+}
+
+function submitCode() {
+  const el = card.querySelector('#code-in');
+  const code = (el ? el.value : '').replace(/\D/g, '');
+  if (code.length !== 4) {
+    net.status = 'Please enter a 4-digit code.';
+    return showScreen('netfail');
+  }
+  netConnect(() => netAsk({ t: 'join', code }));
+}
+
+/** Send a control message to the server, connecting first if needed. */
+function netAsk(obj) {
+  if (net.ws && net.ws.readyState === WebSocket.OPEN) net.ws.send(JSON.stringify(obj));
+  else netConnect(() => net.ws.send(JSON.stringify(obj)));
+}
+
+function closeSocket() {
+  const ws = net.ws;
+  net.ws = null;                       // clear first so onclose does not fire a screen
+  net.code = null;
+  net.role = null;
+  if (ws) { ws.onclose = null; ws.close(); }
+}
+
+function leaveOnline() {
+  closeSocket();
+  game.mode = '1p';
+  game.state = 'title';
+  setStripsVisible(false);
+  showScreen('title');
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   RENDERING
+   ═══════════════════════════════════════════════════════════════════════ */
+
+function drawDesk() {
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.fillStyle = C.desk;
+  ctx.fillRect(0, 0, view.w, view.h);
+
+  // A faint pool of lamplight so the desk is not a flat field.
+  const g = ctx.createRadialGradient(
+    view.w / 2, view.h * 0.42, 10,
+    view.w / 2, view.h * 0.42, Math.max(view.w, view.h) * 0.72
+  );
+  g.addColorStop(0, 'rgba(126,132,150,0.10)');
+  g.addColorStop(1, 'rgba(126,132,150,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, view.w, view.h);
+}
+
+/**
+ * The bump. This is thin paper stretched over a point, not a marble:
+ * a soft warm shadow pooled down-right, a faint sheen up-left that fades to
+ * nothing, and a graphite dot marking exactly where the tip is.
+ */
+function drawBump(x, y, col) {
+  const R = T.BUMP_RADIUS;
+
+  // The shadow does nearly all the work. The paper is already almost white,
+  // so a highlight alone cannot describe the shape — what you actually read
+  // is the warm shade pooling on the far side of the lift.
+  const sg = ctx.createRadialGradient(x + 4.2, y + 5.0, R * 0.10, x + 3.2, y + 4.0, R * 1.34);
+  sg.addColorStop(0.00, 'rgba(96,72,42,0.40)');
+  sg.addColorStop(0.42, 'rgba(96,72,42,0.24)');
+  sg.addColorStop(0.74, 'rgba(96,72,42,0.08)');
+  sg.addColorStop(1.00, 'rgba(96,72,42,0)');
+  ctx.fillStyle = sg;
+  ctx.beginPath();
+  ctx.arc(x + 3.2, y + 4.0, R * 1.34, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Sheen, up-left. No rim, fades entirely to nothing — a rim or a bright
+  // core would read as a bubble sitting on the page rather than the page
+  // itself being lifted from beneath.
+  const hg = ctx.createRadialGradient(x - 3.6, y - 4.2, 0, x - 3.6, y - 4.2, R * 0.96);
+  hg.addColorStop(0.00, 'rgba(255,253,246,0.50)');
+  hg.addColorStop(0.50, 'rgba(255,253,246,0.20)');
+  hg.addColorStop(1.00, 'rgba(255,253,246,0)');
+  ctx.fillStyle = hg;
+  ctx.beginPath();
+  ctx.arc(x - 3.6, y - 4.2, R * 0.96, 0, Math.PI * 2);
+  ctx.fill();
+
+  // The tip itself — lead pressed against the underside of the sheet. Small,
+  // but the one thing on screen a player can aim with, so in a race it carries
+  // the identity: same colour for the same player on both phones.
+  const ink = col || PLAYER.host;
+  ctx.fillStyle = ink.halo;
+  ctx.beginPath();
+  ctx.arc(x, y, 4.4, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = ink.dot;
+  ctx.beginPath();
+  ctx.arc(x, y, 2.3, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+/** The 3-2-1 before a race, drawn over the sheet. */
+function drawCountdown() {
+  const n = Math.ceil(net.countdown / 1000);
+  const label = n > 0 ? String(n) : 'GO';
+  // Fade each number in as it lands, so it does not just blink.
+  const within = (net.countdown % 1000) / 1000;
+  const alpha = n > 0 ? 0.35 + 0.55 * (1 - within) : 0.9;
+
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = '600 96px "Bevan", Georgia, serif';
+  ctx.fillStyle = `rgba(20,22,28,${(0.5 * alpha).toFixed(3)})`;
+  ctx.fillText(label, START_X + 2, V.H * 0.44 + 3);
+  ctx.fillStyle = `rgba(237,230,211,${alpha.toFixed(3)})`;
+  ctx.fillText(label, START_X, V.H * 0.44);
+  ctx.restore();
+}
+
+function render() {
+  drawDesk();
+
+  if (!game.sheet || !paperLayer) return;
+
+  let sx = 0, sy = 0;
+  if (game.shake > 0) {
+    const k = game.shake / T.SHAKE_MS;
+    sx = (Math.random() * 2 - 1) * T.SHAKE_MAG * k;
+    sy = (Math.random() * 2 - 1) * T.SHAKE_MAG * k;
+  }
+
+  const s = view.scale * dpr;
+  ctx.setTransform(s, 0, 0, s, view.ox * dpr + sx * s, view.oy * dpr + sy * s);
+
+  // Paper: shadow, fibre, vignette.
+  ctx.drawImage(
+    paperLayer.cv,
+    PAPER.x - paperLayer.pad, PAPER.y - paperLayer.pad,
+    PAPER.w + paperLayer.pad * 2, PAPER.h + paperLayer.pad * 2
+  );
+
+  // Printed surface: rule lines and holes, clipped to the sheet. This is what
+  // the holder shakes; PRINT_MARGIN is what keeps a gap from opening at the
+  // edge when it slides.
+  const surfaceX = game.surface.x;
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(PAPER.x, PAPER.y, PAPER.w, PAPER.h);
+  ctx.clip();
+  ctx.drawImage(
+    printLayer.cv,
+    PAPER.x - PRINT_MARGIN + surfaceX, PAPER.y,
+    PAPER.w + PRINT_MARGIN * 2, PAPER.h
+  );
+  ctx.restore();
+
+  const live = game.state === 'ready' || game.state === 'countdown' ||
+               game.state === 'playing' || game.state === 'cleared' ||
+               game.state === 'watching';
+
+  if (game.mode === 'net') {
+    // Two pencils under one sheet. A bump vanishes once that player has
+    // dropped through — the pencil is gone, so the paper lies flat again.
+    // Theirs is drawn first so that if the two overlap, yours is on top.
+    if (live || game.state === 'raceover') {
+      if (!net.peerDone || net.peerDone.crossed) {
+        drawBump(net.peerShown.x, net.peerShown.y, inkFor(otherRole(net.role)));
+      }
+      if (!net.myDone || net.myDone.crossed) {
+        drawBump(game.tip.x, game.tip.y, inkFor(net.role));
+      }
+    }
+    if (game.state === 'countdown') drawCountdown();
+  } else if (live) {
+    drawBump(game.tip.x, game.tip.y, PLAYER.host);
+  }
+
+  drawFireworks();
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   FIREWORKS SYSTEM
+   ═══════════════════════════════════════════════════════════════════════ */
+
+const FIREWORK_COLORS = [
+  '#FFD700', '#00F5D4', '#FF3B30', '#FF007F', '#38EF7D', '#FBF7EA', '#00BBFF', '#FF9500'
+];
+
+let fireworks = [];
+let fireworkRockets = [];
+let fireworkTimer = 0;
+
+function launchFirework(targetX, targetY) {
+  const startX = targetX || (PLAY_LEFT + Math.random() * PLAY_W);
+  const ty = targetY || (PAPER.y + 60 + Math.random() * (PAPER.h * 0.45));
+  const sy = PAPER.y + PAPER.h;
+  const color = FIREWORK_COLORS[Math.floor(Math.random() * FIREWORK_COLORS.length)];
+
+  fireworkRockets.push({
+    x: startX,
+    y: sy,
+    targetY: ty,
+    vx: (targetX ? (targetX - startX) * 0.04 : (Math.random() * 2 - 1) * 0.8),
+    vy: -(9 + Math.random() * 4),
+    color: color
+  });
+}
+
+function explodeFirework(x, y, color) {
+  const particleCount = 45 + Math.floor(Math.random() * 25);
+  const baseColor = color || FIREWORK_COLORS[Math.floor(Math.random() * FIREWORK_COLORS.length)];
+
+  for (let i = 0; i < particleCount; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 1.2 + Math.random() * 5.5;
+    fireworks.push({
+      x: x,
+      y: y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      alpha: 1.0,
+      decay: 0.012 + Math.random() * 0.022,
+      gravity: 0.09,
+      friction: 0.965,
+      size: 1.8 + Math.random() * 2.2,
+      color: Math.random() < 0.25 ? FIREWORK_COLORS[Math.floor(Math.random() * FIREWORK_COLORS.length)] : baseColor,
+      sparkle: Math.random() < 0.3
+    });
+  }
+}
+
+function triggerVictoryFireworks(bursts = 4) {
+  for (let i = 0; i < bursts; i++) {
+    setTimeout(() => {
+      const rx = PLAY_LEFT + 40 + Math.random() * (PLAY_W - 80);
+      const ry = PAPER.y + 80 + Math.random() * (PAPER.h * 0.4);
+      launchFirework(rx, ry);
+    }, i * 260);
+  }
+}
+
+function updateFireworks(dt) {
+  // Update rockets
+  for (let i = fireworkRockets.length - 1; i >= 0; i--) {
+    const r = fireworkRockets[i];
+    r.x += r.vx;
+    r.y += r.vy;
+    r.vy += 0.08;
+    if (r.y <= r.targetY || r.vy >= -1) {
+      explodeFirework(r.x, r.y, r.color);
+      fireworkRockets.splice(i, 1);
+    }
+  }
+
+  // Update particles
+  for (let i = fireworks.length - 1; i >= 0; i--) {
+    const p = fireworks[i];
+    p.vx *= p.friction;
+    p.vy *= p.friction;
+    p.vy += p.gravity;
+    p.x += p.vx;
+    p.y += p.vy;
+    p.alpha -= p.decay;
+
+    if (p.alpha <= 0) {
+      fireworks.splice(i, 1);
+    }
+  }
+
+  // Continuous show for grand win state
+  if (game.state === 'won') {
+    fireworkTimer += dt;
+    if (fireworkTimer >= 600) {
+      fireworkTimer = 0;
+      launchFirework();
+    }
+  }
+}
+
+function drawFireworks() {
+  ctx.save();
+  // Draw rockets
+  for (const r of fireworkRockets) {
+    ctx.fillStyle = r.color;
+    ctx.beginPath();
+    ctx.arc(r.x, r.y, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = 'rgba(251,247,234,0.6)';
+    ctx.beginPath();
+    ctx.arc(r.x - r.vx * 1.5, r.y - r.vy * 1.5, 1.2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Draw explosion particles
+  for (const p of fireworks) {
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, p.alpha);
+    ctx.fillStyle = p.color;
+    if (p.sparkle && Math.random() < 0.4) {
+      ctx.fillStyle = '#FFFFFF';
+    }
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   LOOP
+   ═══════════════════════════════════════════════════════════════════════ */
+
+let last = performance.now();
+
+function frame(now) {
+  // Rescheduled FIRST, and the body guarded below. Previously this sat at the
+  // bottom, so any exception mid-frame stopped the loop being queued again and
+  // the game froze for good — one malformed packet from the other phone was
+  // enough to do it.
+  requestAnimationFrame(frame);
+  try {
+    step(now);
+  } catch (err) {
+    if (!frame.warned) { frame.warned = true; console.error('frame error', err); }
+  }
+}
+
+function step(now) {
+  const dt = Math.min(50, now - last);
+  last = now;
+
+  if (game.shake > 0) game.shake = Math.max(0, game.shake - dt);
+  updateFireworks(dt);
+
+  // The other pencil is eased outside the state check on purpose: once you are
+  // out, your own run is over but theirs is not, and their bump has to keep
+  // moving on your screen rather than freezing where you left it.
+  if (game.mode === 'net') {
+    const k = Math.min(1, dt / 55);
+    net.peerShown.x += (net.peerTip.x - net.peerShown.x) * k;
+    net.peerShown.y += (net.peerTip.y - net.peerShown.y) * k;
+    if (game.state === 'watching') updateHud();
+  }
+
+  if (game.state === 'countdown') {
+    net.countdown -= dt;
+    if (net.countdown <= 0) {
+      net.countdown = 0;
+      game.state = 'playing';
+      game.elapsed = 0;          // the clock starts on GO, not on the tap
+    }
+  } else if (game.state === 'playing') {
+    game.elapsed += dt;
+
+    // Both devices run the same recharge clock from the start of the round.
+    // The holder is authoritative — every shake message carries the true count
+    // — so this only has to be close, and it keeps the pencil's pips honest
+    // between shakes. Races have no holder, so no charges.
+    if (game.mode === '2p' && game.charges < T.SHAKE_CHARGES) {
+      game.rechargeT += dt;
+      while (game.rechargeT >= T.SHAKE_RECHARGE_MS && game.charges < T.SHAKE_CHARGES) {
+        game.rechargeT -= T.SHAKE_RECHARGE_MS;
+        game.charges++;
+        updatePips();
+      }
+    }
+
+    if (!amPencil()) {
+      // Holder's screen on a shared device. No collision here at all.
+      const k = Math.min(1, dt / 55);
+      game.tip.x += (net.peerTip.x - game.tip.x) * k;
+      game.tip.y += (net.peerTip.y - game.tip.y) * k;
+      stepSurface(dt);
+    } else {
+      // Keyboard nudges the same target the finger drives.
+      let kx = 0, ky = 0;
+      if (game.keys.left)  kx -= 1;
+      if (game.keys.right) kx += 1;
+      if (game.keys.up)    ky -= 1;
+      if (game.keys.down)  ky += 1;
+      if (kx || ky) {
+        const len = Math.hypot(kx, ky) || 1;
+        const d = T.KEY_SPEED * (dt / 1000);
+        setTarget(game.target.x + (kx / len) * d, game.target.y + (ky / len) * d);
+      }
+
+      // One swept move per frame, resolving tip travel and sheet travel
+      // together. Order matters: the surface has to advance first so the sweep
+      // spans where it was to where it now is.
+      const surfWas = game.surface.x;
+      stepSurface(dt);
+      advanceTip(game.target.x, game.target.y, surfWas, game.surface.x);
+
+      // Roughly 20 updates a second is plenty for a bump that moves slowly.
+      // advanceTip above may have ended my run, in which case 'done' has
+      // already gone out and a trailing position would arrive after it.
+      if (game.mode === 'net' && game.state === 'playing' &&
+          now - net.lastSent >= T.TIP_SEND_MS) {
+        net.lastSent = now;
+        netSend({ k: 'tip', x: +game.tip.x.toFixed(1), y: +game.tip.y.toFixed(1) });
+      }
+    }
+
+    updateHud();
+  } else if (game.surface.x !== 0 || game.surface.v !== 0) {
+    // Let the sheet settle visually after a round ends.
+    stepSurface(dt);
+  }
+
+  render();
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   BOOT
+   ═══════════════════════════════════════════════════════════════════════ */
+
+window.addEventListener('resize', resize);
+window.addEventListener('orientationchange', () => setTimeout(resize, 120));
+document.addEventListener('gesturestart', (e) => e.preventDefault());
+
+// A sheet behind the title card, so the first thing seen is the game.
+game.runSeed = (Math.random() * 0xFFFFFFFF) >>> 0;
+game.sheet = generateSheet(1, sheetSeed(game.runSeed, 1));
+resize();
+showScreen('title');
+requestAnimationFrame(frame);
+
+// Rebuild the paper texture once webfonts land, so the printed labels use
+// Courier Prime rather than the fallback.
+if (document.fonts && document.fonts.ready) {
+  document.fonts.ready.then(() => rebuildLayers());
+}
+</script>
+</body>
+</html>

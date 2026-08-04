@@ -1,0 +1,22 @@
+# Don't Fall In
+
+> A minimalist, physics-based paper pencil precision web game.
+
+## Overview
+Don't Fall In is a lightweight, responsive browser game where players guide a pencil tip pressed up from underneath a sheet of paper full of holes. The objective is to navigate the paper bump from bottom to top without touching or falling through any holes.
+
+## Key Features
+- **Single Player Mode**: 12 progressively challenging levels with denser, smaller hole patterns.
+- **Two Players (One Device)**: Shared screen duel where one player drags the pencil and the second player shakes the paper surface sideways using side strips or keys (`Z` and `M`).
+- **Two Players (Two Devices / Online Race)**: Real-time multiplayer race over WebSockets behind a 4-digit room code, with zero server-side physics required.
+- **Celebratory Particle Fireworks**: HTML5 Canvas particle explosion effects when clearing levels or winning matches.
+
+## Controls
+- **Mouse / Touch**: Tap and drag the paper bump upwards.
+- **Keyboard**: Arrow keys or `WASD` to move the pencil bump.
+- **Paper Shaker (2-Player Local)**: Side touch strips or `Z` / `M` keys.
+
+## Technical Architecture
+- **Frontend**: Vanilla JavaScript (ES6+), HTML5 Canvas, Vanilla CSS.
+- **Backend / WebSockets**: Cloudflare Workers with Durable Objects (and Node.js `ws` server for local development).
+- **SEO & GEO**: Structured JSON-LD VideoGame & FAQPage schemas, OpenGraph meta, LLMs.txt AI agent context.

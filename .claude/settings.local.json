@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(lsof -nP -iTCP:8080 -sTCP:LISTEN)",
+      "Bash(curl -s http://localhost:8080/)",
+      "Bash(node server.js)",
+      "Bash(curl -s -o /dev/null -w \"GET /              -> %{http_code} %{content_type}\\\\n\" http://localhost:8420/)",
+      "Bash(curl -s -o /dev/null -w \"GET /server.js     -> %{http_code}\\\\n\" http://localhost:8420/server.js)",
+      "Bash(curl -s -o /dev/null -w \"GET /nope          -> %{http_code}\\\\n\" http://localhost:8420/nope)",
+      "Bash(curl -s -o /dev/null -w \"traversal attempt  -> %{http_code}\\\\n\" --path-as-is http://localhost:8420/../../../../etc/passwd)",
+      "Bash(node /private/tmp/claude-501/-Users-minhtet-Projects-do-not-fall-in/99d067ef-bd2c-49e2-9943-9122a1bf7616/scratchpad/nettest.js)",
+      "Bash(pkill -f \"node server.js\")"
+    ]
+  }
+}
