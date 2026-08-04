@@ -96,11 +96,7 @@ const httpServer = http.createServer((req, res) => {
     return;
   }
 
-  const targetPath = fs.existsSync(path.join(ROOT, 'public', name))
-    ? path.join(ROOT, 'public', name)
-    : path.join(ROOT, name);
-
-  fs.readFile(targetPath, (err, buf) => {
+  fs.readFile(path.join(ROOT, name), (err, buf) => {
     if (err) {
       res.writeHead(404, { 'Content-Type': 'text/plain', ...SECURITY_HEADERS }).end('Not found');
       return;

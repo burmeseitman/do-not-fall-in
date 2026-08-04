@@ -6,7 +6,7 @@
   "workers_dev": true,
   "preview_urls": true,
   "assets": {
-    "directory": "./public"
+    "directory": "./"
   },
   "durable_objects": {
     "bindings": [
