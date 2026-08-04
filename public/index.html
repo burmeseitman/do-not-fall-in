@@ -456,7 +456,7 @@
 "use strict";
 
 /* ═══════════════════════════════════════════════════════════════════════
-   WEB AUDIO API SYNTHESIZER
+   WEB AUDIO API SYNTHESIZER (ROCK-SOLID AUTO-UNLOCK)
    ═══════════════════════════════════════════════════════════════════════ */
 
 let audioCtx = null;
@@ -465,12 +465,31 @@ let soundMuted = localStorage.getItem('dont_fall_in_muted') === 'true';
 function initAudio() {
   if (!audioCtx) {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
-    if (AudioContext) audioCtx = new AudioContext();
+    if (AudioContext) {
+      audioCtx = new AudioContext();
+    }
   }
   if (audioCtx && audioCtx.state === 'suspended') {
     audioCtx.resume();
   }
+  // Unlock iOS Safari / Mobile webkit audio context with silent buffer
+  if (audioCtx && !initAudio.unlocked) {
+    try {
+      const buf = audioCtx.createBuffer(1, 1, 22050);
+      const src = audioCtx.createBufferSource();
+      src.buffer = buf;
+      src.connect(audioCtx.destination);
+      src.start(0);
+      initAudio.unlocked = true;
+    } catch {}
+  }
 }
+
+// Auto-unlock audio context on first user interaction anywhere
+window.addEventListener('pointerdown', initAudio, { passive: true });
+window.addEventListener('touchstart', initAudio, { passive: true });
+window.addEventListener('keydown', initAudio, { passive: true });
+window.addEventListener('click', initAudio, { passive: true });
 
 function updateSoundButton() {
   const btn = document.getElementById('btn-sound');
@@ -484,6 +503,7 @@ function toggleSound() {
   soundMuted = !soundMuted;
   localStorage.setItem('dont_fall_in_muted', String(soundMuted));
   updateSoundButton();
+  if (!soundMuted) soundClick();
 }
 
 function playSynthTone(freqs, type, duration, vol = 0.15) {
@@ -494,19 +514,21 @@ function playSynthTone(freqs, type, duration, vol = 0.15) {
   try {
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
-    osc.type = type;
+    osc.type = type || 'sine';
 
     const now = audioCtx.currentTime;
-    gain.gain.setValueAtTime(vol, now);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+    gain.gain.setValueAtTime(Math.max(0.0001, vol), now);
+    gain.gain.linearRampToValueAtTime(0.0001, now + duration);
 
     if (Array.isArray(freqs)) {
-      osc.frequency.setValueAtTime(freqs[0], now);
+      const f0 = Math.max(20, freqs[0] || 440);
+      osc.frequency.setValueAtTime(f0, now);
       if (freqs.length > 1) {
-        osc.frequency.exponentialRampToValueAtTime(freqs[1], now + duration);
+        const f1 = Math.max(20, freqs[1] || f0);
+        osc.frequency.exponentialRampToValueAtTime(f1, now + duration);
       }
     } else {
-      osc.frequency.setValueAtTime(freqs, now);
+      osc.frequency.setValueAtTime(Math.max(20, freqs || 440), now);
     }
 
     osc.connect(gain);
