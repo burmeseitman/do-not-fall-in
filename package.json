@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "description": "Guide a pencil across a paper full of holes without falling through.",
-  "main": "server.js",
+  "main": "src/server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "node src/server.js",
     "deploy": "wrangler deploy",
     "preview": "wrangler dev"
   },

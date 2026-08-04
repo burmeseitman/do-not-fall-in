@@ -31,7 +31,7 @@ const { WebSocketServer } = require('ws');
 // 8080 collides with too much (nginx, dev servers, containers). Override with
 // PORT=... if this one is busy too.
 const PORT = Number(process.env.PORT) || 8420;
-const ROOT = __dirname;
+const ROOT = path.join(__dirname, '..', 'public');
 
 /* ── Limits ──────────────────────────────────────────────────────────────
    This binds to 0.0.0.0 so two phones can reach it, which means anything on

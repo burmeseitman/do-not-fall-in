@@ -61,19 +61,21 @@
 
 ```
 .
-├── index.html          # Main HTML5 Canvas frontend, UI cards, & fireworks engine
-├── server.js           # Node.js + ws HTTP/WebSocket server for local development
-├── worker.js           # Cloudflare Worker + Durable Object WebSocket backend
-├── wrangler.json       # Cloudflare Wrangler deployment configuration
-├── public/             # Static assets build output for Cloudflare Pages / Workers
-│   ├── index.html
-│   ├── robots.txt
-│   ├── sitemap.xml
-│   └── llms.txt
-├── robots.txt          # SEO & AI crawler rules (GPTBot, ClaudeBot, PerplexityBot)
-├── sitemap.xml         # XML Sitemap
-├── llms.txt            # AI Agent open standard context document
-└── package.json        # Project metadata & npm scripts
+├── public/                 # Static web assets served to browsers & AI crawlers
+│   ├── index.html          # Main HTML5 Canvas app frontend & UI
+│   ├── robots.txt          # SEO & AI crawler rules
+│   ├── sitemap.xml         # Search engine sitemap
+│   └── llms.txt            # AI Agent open standard context document
+│
+├── src/                    # Backend server and worker source code
+│   ├── server.js           # Local Node.js + WebSocket dev server
+│   └── worker.js           # Cloudflare Worker + Durable Object backend
+│
+├── wrangler.json           # Cloudflare Wrangler project configuration
+├── package.json            # Project manifest & npm scripts
+├── package-lock.json       # Node package lock
+├── README.md               # Project documentation
+└── .gitignore              # Git exclusion rules
 ```
 
 ---
