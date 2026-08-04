@@ -1703,12 +1703,15 @@ function startCountdown() {
    INPUT
    ═══════════════════════════════════════════════════════════════════════ */
 
-canvas.addEventListener('pointerdown', (e) => {
+/* ═══════════════════════════════════════════════════════════════════════
+   INPUT — Multi-touch safe for 2P Same Phone mode
+   ═══════════════════════════════════════════════════════════════════════ */
+
+function startPencilDrag(clientX, clientY, id) {
   if (game.state !== 'ready' && game.state !== 'playing') return;
   if (!amPencil()) return;             // the holder does not get to drag
-  const p = toVirtual(e.clientX, e.clientY);
+  const p = toVirtual(clientX, clientY);
 
-  // Touching anywhere on the paper seamlessly grabs and steers the pencil bump
   let dx = game.tip.x - p.x;
   let dy = game.tip.y - p.y;
   const minAbove = T.MIN_ABOVE_FINGER / view.scale;
@@ -1717,30 +1720,83 @@ canvas.addEventListener('pointerdown', (e) => {
   game.grabDX = dx;
   game.grabDY = dy;
   game.dragging = true;
-  game.pointerId = e.pointerId;
+  game.pointerId = id;
   game.state = 'playing';
-  canvas.setPointerCapture(e.pointerId);
 
-  // Input only ever sets the target. The frame loop performs the swept move,
-  // so tip travel and sheet travel are resolved together.
   setTarget(p.x + dx, p.y + dy);
+}
+
+function movePencilDrag(clientX, clientY, id) {
+  if (!game.dragging) return;
+  if (game.pointerId !== null && id !== game.pointerId) return;
+  const p = toVirtual(clientX, clientY);
+  setTarget(p.x + game.grabDX, p.y + game.grabDY);
+}
+
+function endPencilDrag(id) {
+  if (game.pointerId === id) {
+    game.dragging = false;
+    game.pointerId = null;
+  }
+}
+
+// 1. Native Touch Events (For mobile devices - immune to multi-touch pointercancel)
+canvas.addEventListener('touchstart', (e) => {
+  if (game.state !== 'ready' && game.state !== 'playing') return;
+  if (!amPencil()) return;
+  for (let i = 0; i < e.changedTouches.length; i++) {
+    const t = e.changedTouches[i];
+    startPencilDrag(t.clientX, t.clientY, t.identifier);
+    break;
+  }
+  e.preventDefault();
+}, { passive: false });
+
+canvas.addEventListener('touchmove', (e) => {
+  if (!game.dragging) return;
+  for (let i = 0; i < e.touches.length; i++) {
+    const t = e.touches[i];
+    if (t.identifier === game.pointerId) {
+      movePencilDrag(t.clientX, t.clientY, t.identifier);
+      break;
+    }
+  }
+  e.preventDefault();
+}, { passive: false });
+
+canvas.addEventListener('touchend', (e) => {
+  for (let i = 0; i < e.changedTouches.length; i++) {
+    endPencilDrag(e.changedTouches[i].identifier);
+  }
+}, { passive: false });
+
+canvas.addEventListener('touchcancel', (e) => {
+  // Ignore touchcancel on mobile multi-touch so pencil drag stays active!
+}, { passive: false });
+
+// 2. Pointer Events (For Desktop Mouse & Pen)
+canvas.addEventListener('pointerdown', (e) => {
+  if (e.pointerType === 'touch') return; // Handled by touchstart
+  startPencilDrag(e.clientX, e.clientY, e.pointerId);
+  try { canvas.setPointerCapture(e.pointerId); } catch {}
   e.preventDefault();
 }, { passive: false });
 
 canvas.addEventListener('pointermove', (e) => {
-  if (!game.dragging || e.pointerId !== game.pointerId) return;
-  const p = toVirtual(e.clientX, e.clientY);
-  setTarget(p.x + game.grabDX, p.y + game.grabDY);
+  if (e.pointerType === 'touch') return; // Handled by touchmove
+  movePencilDrag(e.clientX, e.clientY, e.pointerId);
   e.preventDefault();
 }, { passive: false });
 
-function releasePointer(e) {
-  if (e.pointerId !== game.pointerId) return;
-  game.dragging = false;
-  game.pointerId = null;
-}
-canvas.addEventListener('pointerup', releasePointer);
-canvas.addEventListener('pointercancel', releasePointer);
+canvas.addEventListener('pointerup', (e) => {
+  if (e.pointerType === 'touch') return;
+  endPencilDrag(e.pointerId);
+});
+
+canvas.addEventListener('pointercancel', (e) => {
+  if (e.pointerType === 'touch') return;
+  endPencilDrag(e.pointerId);
+});
 
 const KEY_MAP = {
   ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down',
@@ -1803,7 +1859,12 @@ function pressStrip(el, dir) {
 }
 
 for (const [el, dir] of [[stripL, -1], [stripR, +1]]) {
-  el.addEventListener('pointerdown', (e) => { pressStrip(el, dir); e.preventDefault(); }, { passive: false });
+  el.addEventListener('touchstart', (e) => { pressStrip(el, dir); e.preventDefault(); }, { passive: false });
+  el.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'touch') return;
+    pressStrip(el, dir);
+    e.preventDefault();
+  }, { passive: false });
   // Keyboard activation of the focused button, without double-firing on tap.
   el.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') { pressStrip(el, dir); e.preventDefault(); }
