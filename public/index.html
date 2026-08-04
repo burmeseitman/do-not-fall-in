@@ -1707,6 +1707,12 @@ function startCountdown() {
    INPUT — Multi-touch safe for 2P Same Phone mode
    ═══════════════════════════════════════════════════════════════════════ */
 
+/* ═══════════════════════════════════════════════════════════════════════
+   INPUT — Global Multi-touch safe for 2P Same Phone mode
+   ═══════════════════════════════════════════════════════════════════════ */
+
+let activePencilTouchId = null;
+
 function startPencilDrag(clientX, clientY, id) {
   if (game.state !== 'ready' && game.state !== 'playing') return;
   if (!amPencil()) return;             // the holder does not get to drag
@@ -1740,50 +1746,92 @@ function endPencilDrag(id) {
   }
 }
 
-// 1. Native Touch Events (For mobile devices - immune to multi-touch pointercancel)
-canvas.addEventListener('touchstart', (e) => {
-  if (game.state !== 'ready' && game.state !== 'playing') return;
-  if (!amPencil()) return;
-  for (let i = 0; i < e.changedTouches.length; i++) {
-    const t = e.changedTouches[i];
-    startPencilDrag(t.clientX, t.clientY, t.identifier);
-    break;
-  }
-  e.preventDefault();
-}, { passive: false });
+// 1. Global Touch Engine for Mobile Devices (Pencil Drag + Side Shake Strips)
+const touchedShakes = new Set();
 
-canvas.addEventListener('touchmove', (e) => {
-  if (!game.dragging) return;
+function handleMobileTouches(e) {
+  if (game.state !== 'ready' && game.state !== 'playing') return;
+
+  const hitL = Math.max(64, view.ox + T.SHAKE_STRIP * view.scale + 10);
+  const hitR = window.innerWidth - hitL;
+
   for (let i = 0; i < e.touches.length; i++) {
     const t = e.touches[i];
-    if (t.identifier === game.pointerId) {
-      movePencilDrag(t.clientX, t.clientY, t.identifier);
-      break;
+    const x = t.clientX;
+
+    // Check if this touch is on the left/right shake buttons in 2P mode
+    if (game.mode === '2p') {
+      if (x <= hitL && t.identifier !== activePencilTouchId) {
+        if (!touchedShakes.has(t.identifier)) {
+          touchedShakes.add(t.identifier);
+          pressStrip(stripL, -1);
+        }
+        continue;
+      } else if (x >= hitR && t.identifier !== activePencilTouchId) {
+        if (!touchedShakes.has(t.identifier)) {
+          touchedShakes.add(t.identifier);
+          pressStrip(stripR, +1);
+        }
+        continue;
+      }
+    }
+
+    // Otherwise, this touch drives the pencil!
+    if (amPencil()) {
+      if (activePencilTouchId === null) {
+        activePencilTouchId = t.identifier;
+        startPencilDrag(t.clientX, t.clientY, t.identifier);
+      } else if (t.identifier === activePencilTouchId) {
+        movePencilDrag(t.clientX, t.clientY, t.identifier);
+      }
     }
   }
-  e.preventDefault();
-}, { passive: false });
+}
 
-canvas.addEventListener('touchend', (e) => {
-  for (let i = 0; i < e.changedTouches.length; i++) {
-    endPencilDrag(e.changedTouches[i].identifier);
+window.addEventListener('touchstart', (e) => {
+  if (game.state === 'ready' || game.state === 'playing') {
+    handleMobileTouches(e);
   }
-}, { passive: false });
+}, { passive: true });
 
-canvas.addEventListener('touchcancel', (e) => {
-  // Ignore touchcancel on mobile multi-touch so pencil drag stays active!
-}, { passive: false });
+window.addEventListener('touchmove', (e) => {
+  if (game.state === 'ready' || game.state === 'playing') {
+    handleMobileTouches(e);
+  }
+}, { passive: true });
 
-// 2. Pointer Events (For Desktop Mouse & Pen)
+window.addEventListener('touchend', (e) => {
+  for (let i = 0; i < e.changedTouches.length; i++) {
+    const id = e.changedTouches[i].identifier;
+    touchedShakes.delete(id);
+    if (id === activePencilTouchId) {
+      endPencilDrag(id);
+      activePencilTouchId = null;
+    }
+  }
+}, { passive: true });
+
+window.addEventListener('touchcancel', (e) => {
+  for (let i = 0; i < e.changedTouches.length; i++) {
+    const id = e.changedTouches[i].identifier;
+    touchedShakes.delete(id);
+    if (id === activePencilTouchId) {
+      endPencilDrag(id);
+      activePencilTouchId = null;
+    }
+  }
+}, { passive: true });
+
+// 2. Desktop Mouse & Pointer Events
 canvas.addEventListener('pointerdown', (e) => {
-  if (e.pointerType === 'touch') return; // Handled by touchstart
+  if (e.pointerType === 'touch') return; // Handled by mobile touch listeners
   startPencilDrag(e.clientX, e.clientY, e.pointerId);
   try { canvas.setPointerCapture(e.pointerId); } catch {}
   e.preventDefault();
 }, { passive: false });
 
 canvas.addEventListener('pointermove', (e) => {
-  if (e.pointerType === 'touch') return; // Handled by touchmove
+  if (e.pointerType === 'touch') return;
   movePencilDrag(e.clientX, e.clientY, e.pointerId);
   e.preventDefault();
 }, { passive: false });
