@@ -153,10 +153,11 @@
   /* ---- HUD ---------------------------------------------------------- */
   #hud {
     position: absolute;
-    top: max(10px, env(safe-area-inset-top));
+    top: max(12px, env(safe-area-inset-top));
     left: 0; right: 0;
     display: flex;
     justify-content: space-between;
+    align-items: center;
     padding: 0 16px;
     font-family: var(--mono);
     font-size: 13px;
@@ -164,9 +165,38 @@
     color: var(--dim);
     pointer-events: none;
     text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+    z-index: 100;
   }
-  #hud.hidden { opacity: 0; }
-  #hud > * { transition: opacity 180ms linear; }
+  #hud #hud-sheet, #hud #hud-time {
+    transition: opacity 180ms linear;
+  }
+  #hud.hidden #hud-sheet, #hud.hidden #hud-time {
+    opacity: 0;
+  }
+  #btn-sound {
+    background: rgba(25, 27, 33, 0.85);
+    border: 1px solid #3A3F4B;
+    border-radius: 20px;
+    color: var(--paper);
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 6px 12px;
+    pointer-events: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    transition: transform 120ms ease, background 120ms ease;
+  }
+  #btn-sound:hover {
+    background: rgba(45, 49, 62, 0.95);
+    border-color: #5A6070;
+  }
+  #btn-sound:active {
+    transform: scale(0.94);
+  }
 
   /* ---- Screens ------------------------------------------------------ */
   #screens {
@@ -444,7 +474,9 @@ function initAudio() {
 
 function updateSoundButton() {
   const btn = document.getElementById('btn-sound');
-  if (btn) btn.textContent = soundMuted ? '🔇' : '🔊';
+  if (btn) {
+    btn.innerHTML = soundMuted ? '🔇 <span style="opacity:0.75">Muted</span>' : '🔊 <span style="opacity:0.9">Sound</span>';
+  }
 }
 
 function toggleSound() {
