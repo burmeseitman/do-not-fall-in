@@ -49,6 +49,8 @@
 
 ## ✨ Features
 
+- **🎵 Web Audio Synthesizer**: Pure Web Audio API sound effects (drop plop, victory chime arpeggio, shake thud, button click) with an interactive HUD Mute/Unmute toggle (🔊 / 🔇).
+- **📱 Progressive Web App (PWA)**: Includes Web App Manifest (`manifest.json`) and SVG favicon (`favicon.svg`) for seamless **"Add to Home Screen"** mobile experience.
 - **🎆 Canvas Particle Fireworks**: Dynamic, physics-driven particle explosions with vibrant color palettes (Gold, Neon Cyan, Crimson, Magenta, Emerald) when clearing levels or winning matches.
 - **🌐 Cloudflare Workers & Durable Objects**: Zero-latency, stateful WebSocket room relay using Cloudflare Durable Objects and WebSocket Hibernation attachments for 100% reliable global room pairing.
 - **🤖 Generative Engine Optimization (GEO)**: Built-in `JSON-LD` schemas (`VideoGame` and `FAQPage`), `llms.txt` context file, and AI agent crawler directives (`robots.txt`) optimized for ChatGPT, Google Gemini, Perplexity, and Claude.

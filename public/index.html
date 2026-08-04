@@ -20,6 +20,12 @@
 
 <title>Don't Fall In — Paper Pencil Precision Browser Game</title>
 
+<!-- Favicon & PWA Manifest -->
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
 <!-- Primary SEO Meta Tags -->
 <meta name="title" content="Don't Fall In — Paper Pencil Precision Browser Game">
 <meta name="description" content="Guide a pencil across a paper full of holes without falling through. Play single player across 12 levels or race a friend online on two phones in real-time!">
@@ -394,7 +400,10 @@
 
   <div id="hud">
     <span id="hud-sheet">SHEET 1 / 12</span>
-    <span id="hud-time">0.0</span>
+    <span style="display:flex; align-items:center; gap:10px;">
+      <button id="btn-sound" style="background:none; border:none; color:inherit; font:inherit; cursor:pointer; padding:0 4px; pointer-events:auto;" aria-label="Toggle sound">🔊</button>
+      <span id="hud-time">0.0</span>
+    </span>
   </div>
 
   <div id="strips" hidden>
@@ -415,6 +424,90 @@
 
 <script>
 "use strict";
+
+/* ═══════════════════════════════════════════════════════════════════════
+   WEB AUDIO API SYNTHESIZER
+   ═══════════════════════════════════════════════════════════════════════ */
+
+let audioCtx = null;
+let soundMuted = localStorage.getItem('dont_fall_in_muted') === 'true';
+
+function initAudio() {
+  if (!audioCtx) {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (AudioContext) audioCtx = new AudioContext();
+  }
+  if (audioCtx && audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+}
+
+function updateSoundButton() {
+  const btn = document.getElementById('btn-sound');
+  if (btn) btn.textContent = soundMuted ? '🔇' : '🔊';
+}
+
+function toggleSound() {
+  initAudio();
+  soundMuted = !soundMuted;
+  localStorage.setItem('dont_fall_in_muted', String(soundMuted));
+  updateSoundButton();
+}
+
+function playSynthTone(freqs, type, duration, vol = 0.15) {
+  if (soundMuted) return;
+  initAudio();
+  if (!audioCtx) return;
+
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+
+    const now = audioCtx.currentTime;
+    gain.gain.setValueAtTime(vol, now);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+    if (Array.isArray(freqs)) {
+      osc.frequency.setValueAtTime(freqs[0], now);
+      if (freqs.length > 1) {
+        osc.frequency.exponentialRampToValueAtTime(freqs[1], now + duration);
+      }
+    } else {
+      osc.frequency.setValueAtTime(freqs, now);
+    }
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(now);
+    osc.stop(now + duration);
+  } catch {}
+}
+
+function soundDrop() {
+  playSynthTone([420, 90], 'sine', 0.35, 0.25);
+}
+
+function soundShake() {
+  playSynthTone([180, 55], 'triangle', 0.15, 0.28);
+}
+
+function soundClick() {
+  playSynthTone(550, 'sine', 0.04, 0.08);
+}
+
+function soundVictory() {
+  if (soundMuted) return;
+  initAudio();
+  if (!audioCtx) return;
+
+  const notes = [523.25, 659.25, 783.99, 1046.50];
+  notes.forEach((freq, idx) => {
+    setTimeout(() => {
+      playSynthTone(freq, 'sine', 0.25, 0.12);
+    }, idx * 90);
+  });
+}
 
 /* ═══════════════════════════════════════════════════════════════════════
    TUNING — the numbers worth changing are all here.
@@ -1162,6 +1255,7 @@ function shakeSheet(dir) {
   game.charges--;
   game.rechargeT = 0;
   updatePips();
+  soundShake();
   applyShake(dir);
   return true;
 }
@@ -1254,6 +1348,7 @@ function onFell() {
   game.state = 'fell';
   game.dragging = false;
   game.pointerId = null;
+  soundDrop();
   if (!reduceMotion) game.shake = T.SHAKE_MS;
   if (isDuel()) return endRound(false);
   showScreen('fell');
@@ -1263,6 +1358,7 @@ function onFinish() {
   game.dragging = false;
   game.pointerId = null;
   game.state = 'cleared';
+  soundVictory();
   if (isDuel()) return endRound(true);
   if (game.level >= T.LEVELS) {
     game.state = 'won';
@@ -1898,6 +1994,7 @@ function showScreen(kind) {
   // The guest's lobby and result cards have no primary button at all — the
   // host drives every transition, so there is no readiness handshake.
   if (primary) primary.onclick = () => {
+    soundClick();
     if (kind === 'title' || kind === 'won') startRun();
     else if (kind === 'fell') loadSheet();
     else if (kind === 'cleared') { game.level++; loadSheet(); }
@@ -1915,6 +2012,7 @@ function showScreen(kind) {
 
   if (secondary) {
     secondary.onclick = () => {
+      soundClick();
       if (kind === 'title') return startDuel();
       if (kind === 'netmenu') return showScreen('joining');
       if (kind === 'joining' || kind === 'hosting') { closeSocket(); return showScreen('netmenu'); }
@@ -1924,6 +2022,7 @@ function showScreen(kind) {
 
   if (third) {
     third.onclick = () => {
+      soundClick();
       if (kind === 'title') { if (canGoOnline) showScreen('netmenu'); }
       else if (kind === 'netmenu') leaveOnline();
     };
@@ -2371,6 +2470,9 @@ game.runSeed = (Math.random() * 0xFFFFFFFF) >>> 0;
 game.sheet = generateSheet(1, sheetSeed(game.runSeed, 1));
 resize();
 showScreen('title');
+updateSoundButton();
+const btnSound = document.getElementById('btn-sound');
+if (btnSound) btnSound.addEventListener('click', toggleSound);
 requestAnimationFrame(frame);
 
 // Rebuild the paper texture once webfonts land, so the printed labels use

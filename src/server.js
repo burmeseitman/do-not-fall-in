@@ -60,6 +60,8 @@ const PUBLIC = new Map([
   ['/robots.txt', 'robots.txt'],
   ['/sitemap.xml', 'sitemap.xml'],
   ['/llms.txt', 'llms.txt'],
+  ['/favicon.svg', 'favicon.svg'],
+  ['/manifest.json', 'manifest.json'],
 ]);
 
 const SECURITY_HEADERS = {
