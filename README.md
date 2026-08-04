@@ -1,10 +1,11 @@
 # ✏️ Don't Fall In
 
-> A minimalist, physics-based paper pencil precision web game.
+> A minimalist, physics-based paper pencil precision web game with real-time multiplayer, Web Audio synth sound effects, and Progressive Web App (PWA) support.
 
 [![Deploy to Cloudflare Workers](https://img.shields.io/badge/Deploy-Cloudflare%20Workers-orange?logo=cloudflare)](https://workers.cloudflare.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Built with HTML5 Canvas](https://img.shields.io/badge/Built%20with-HTML5%20Canvas-red)](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API)
+[![PWA Ready](https://img.shields.io/badge/PWA-Ready-brightgreen)](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps)
 
 ---
 
@@ -19,20 +20,23 @@
 ### 1. 🎯 One Player (Single Player)
 - Progress through **12 levels** of increasing difficulty.
 - Levels feature progressively smaller hole radii, denser staggered patterns, and tighter corridors.
+- Solvability verification algorithm ensures every generated level is 100% winnable.
 - Features level-clearing particle fireworks and grand victory celebrations upon completing all 12 levels.
 
 ### 2. 📱 Two Players, One Phone (Local Shared Duel)
-- Turn-based duel played on a single device.
+- Turn-based duel played on a single device screen.
+- Powered by a custom **Global Multi-Touch Engine**: Player 1 drags the pencil bump anywhere in the center paper area while Player 2 taps side shake strips to shake the paper sideways—both running simultaneously on mobile touchscreens without pointer cancellation or touch drops.
 - **Player 1** drags the pencil bump.
-- **Player 2** holds the paper and uses the side touch strips (or `Z` / `M` keys on a keyboard) to shake the printed paper surface sideways and attempt to knock the pencil into a hole.
-- Player 2 then takes a turn running the exact same sheet layout for a fair comparison.
+- **Player 2** holds the paper and taps the side touch strips (or presses `Z` / `M` keys on a keyboard) to shake the printed paper surface sideways and attempt to knock the pencil into a hole.
+- Player 2 then takes a turn running the exact same sheet seed layout for a fair comparison.
 
 ### 3. 🌐 Two Phones (Real-Time Online Race)
 - Instant multiplayer race across two mobile devices over WebSockets.
 - Host creates a room to generate a **4-digit room code**.
-- Guest joins using the code.
-- Both players race simultaneously on the identical sheet seed layout in real-time.
-- Features **Instant Victory** when crossing the finish line first and real-time bump position synchronization.
+- Guest joins using the room code and optional guest name.
+- Both players race simultaneously on identical sheet seed layouts in real-time.
+- Features **Instant Finish-Line Victory**: Crossing the finish line wins immediately without waiting for non-moving opponents.
+- Powered by Cloudflare Durable Objects with Native WebSocket Hibernation (`ws.serializeAttachment()`) for 100% reliable state persistence across DO wakeups.
 
 ---
 
@@ -40,31 +44,35 @@
 
 | Input Device | Action |
 | :--- | :--- |
-| **Touchscreen** | Tap and drag the paper bump upwards |
-| **Mouse** | Click and drag the paper bump |
+| **Touchscreen (Mobile)** | Touch anywhere on the paper canvas to seamlessly drag the pencil bump |
+| **Mouse (Desktop)** | Click and drag the paper bump |
 | **Keyboard** | `Arrow Keys` or `WASD` to move the pencil bump |
-| **Paper Shaker (2-Player Local)** | Side touch strips, or `Z` (Left Shake) and `M` (Right Shake) keys |
+| **Paper Shaker (2-Player Local)** | Side touch strips on screen edges, or `Z` (Left Shake) and `M` (Right Shake) keys |
+| **Sound Toggle** | Tap the top-right HUD button (`🔊 Sound` / `🔇 Muted`) |
 
 ---
 
 ## ✨ Features
 
-- **🎵 Web Audio Synthesizer**: Pure Web Audio API sound effects (drop plop, victory chime arpeggio, shake thud, button click) with an interactive HUD Mute/Unmute toggle (🔊 / 🔇).
-- **📱 Progressive Web App (PWA)**: Includes Web App Manifest (`manifest.json`) and SVG favicon (`favicon.svg`) for seamless **"Add to Home Screen"** mobile experience.
+- **📱 Global Multi-Touch Engine**: Seamlessly routes concurrent multi-touch events on mobile phones so pencil dragging and side-strip paper shaking happen simultaneously without touch cancellation.
+- **🎵 Web Audio Synthesizer**: Pure Web Audio API sound effects (drop plop, victory chime arpeggio, shake thud, tactile button clicks) with zero external file dependencies and an interactive HUD Mute/Unmute toggle (🔊 / 🔇). Includes iOS Safari Web Audio auto-unlock.
+- **📱 Progressive Web App (PWA)**: Includes Web App Manifest (`manifest.json`) and SVG favicon (`favicon.svg`) for seamless **"Add to Home Screen"** native-like playback on iOS and Android.
 - **🎆 Canvas Particle Fireworks**: Dynamic, physics-driven particle explosions with vibrant color palettes (Gold, Neon Cyan, Crimson, Magenta, Emerald) when clearing levels or winning matches.
 - **🌐 Cloudflare Workers & Durable Objects**: Zero-latency, stateful WebSocket room relay using Cloudflare Durable Objects and WebSocket Hibernation attachments for 100% reliable global room pairing.
-- **🤖 Generative Engine Optimization (GEO)**: Built-in `JSON-LD` schemas (`VideoGame` and `FAQPage`), `llms.txt` context file, and AI agent crawler directives (`robots.txt`) optimized for ChatGPT, Google Gemini, Perplexity, and Claude.
+- **🤖 Generative Engine Optimization (GEO)**: Built-in `JSON-LD` schemas (`VideoGame` and `FAQPage`), `robots.txt` AI crawler rules, `sitemap.xml`, and `/llms.txt` context document optimized for ChatGPT, Google Gemini, Perplexity, and Claude.
 - **🔍 Full SEO & Social Sharing**: Open Graph and Twitter Card tags for rich previews when shared on Discord, Twitter, or messaging apps.
-- **💬 Accessible Plain English UI**: Simple, welcoming text designed for players of all ages and language backgrounds.
+- **💬 Accessible Plain English UI**: Clear, welcoming text designed for players of all ages and language backgrounds.
 
 ---
 
 ## 🛠️ Project Structure
 
 ```
-.
+do-not-fall-in/
 ├── public/                 # Static web assets served to browsers & AI crawlers
 │   ├── index.html          # Main HTML5 Canvas app frontend & UI
+│   ├── favicon.svg         # Paper & pencil SVG favicon
+│   ├── manifest.json       # PWA Web App Manifest
 │   ├── robots.txt          # SEO & AI crawler rules
 │   ├── sitemap.xml         # Search engine sitemap
 │   └── llms.txt            # AI Agent open standard context document
@@ -76,8 +84,7 @@
 ├── wrangler.json           # Cloudflare Wrangler project configuration
 ├── package.json            # Project manifest & npm scripts
 ├── package-lock.json       # Node package lock
-├── README.md               # Project documentation
-└── .gitignore              # Git exclusion rules
+└── README.md               # Project documentation
 ```
 
 ---
@@ -86,7 +93,7 @@
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/your-username/do-not-fall-in.git
+   git clone https://github.com/burmeseitman/do-not-fall-in.git
    cd do-not-fall-in
    ```
 
