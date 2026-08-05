@@ -5,7 +5,7 @@
 [![Deploy to Cloudflare Workers](https://img.shields.io/badge/Deploy-Cloudflare%20Workers-orange?logo=cloudflare)](https://workers.cloudflare.com/)
 [![Built with HTML5 Canvas](https://img.shields.io/badge/Built%20with-HTML5%20Canvas-red)](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API)
 [![PWA Ready](https://img.shields.io/badge/PWA-Ready-brightgreen)](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License: Source-Available](https://img.shields.io/badge/License-Source--Available-red.svg)](LICENSE)
 
 ---
 
@@ -122,4 +122,4 @@ npm run deploy
 
 ## 📜 License
 
-This project is open-source and available under the [MIT License](LICENSE).
+This project is available under the [Source-Available License (All Rights Reserved)](LICENSE). You are free to view, clone, and study the source code for personal and educational purposes, but commercial deployment, re-branding, or live re-publishing is strictly prohibited without authorization.
