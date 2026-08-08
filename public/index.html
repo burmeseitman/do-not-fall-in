@@ -415,19 +415,22 @@
     margin: 0 0 16px;
   }
   .tab {
-    padding: 10px 6px;
+    height: 42px;
+    padding: 0 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-family: var(--mono);
     font-size: 12px;
     font-weight: 700;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
     color: var(--dim);
     background: transparent;
     border: 1px solid #3A3F4B;
     border-radius: 3px;
     cursor: pointer;
-    text-align: center;
-    line-height: 1.2;
+    box-sizing: border-box;
   }
   .tab.active { color: #14161B; background: var(--paper); border-color: var(--paper); }
 
