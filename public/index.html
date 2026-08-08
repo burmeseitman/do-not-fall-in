@@ -408,24 +408,26 @@
   .pip.on { background: var(--paper); box-shadow: none; }
 
   /* ---- Scoreboard / Stats ------------------------------------------- */
-  .tabs { display: flex; gap: 4px; margin: 0 0 16px; }
+  .tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin: 0 0 16px;
+  }
   .tab {
-    flex: 1;
-    min-width: 0;
-    padding: 8px 2px;
+    padding: 10px 6px;
     font-family: var(--mono);
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
     color: var(--dim);
     background: transparent;
     border: 1px solid #3A3F4B;
     border-radius: 3px;
     cursor: pointer;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    text-align: center;
+    line-height: 1.2;
   }
   .tab.active { color: #14161B; background: var(--paper); border-color: var(--paper); }
 
@@ -2503,10 +2505,10 @@ function showScreen(kind) {
     html = `
       <h2 id="card-title">📊 Scoreboard</h2>
       <div class="tabs">
-        <button class="tab active" data-tab="sp">Single</button>
-        <button class="tab" data-tab="dp">2P Local</button>
-        <button class="tab" data-tab="net">Online</button>
-        <button class="tab" data-tab="global">🌐 Global</button>
+        <button class="tab active" data-tab="sp">🎯 Single</button>
+        <button class="tab" data-tab="dp">📱 2P Local</button>
+        <button class="tab" data-tab="net">🌐 Online</button>
+        <button class="tab" data-tab="global">🏆 Global</button>
       </div>
       <div id="stats-body">${buildStatsTab('sp')}</div>
       <div class="rule"></div>
