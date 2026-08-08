@@ -406,6 +406,69 @@
     transition: background 120ms linear;
   }
   .pip.on { background: var(--paper); box-shadow: none; }
+
+  /* ---- Scoreboard / Stats ------------------------------------------- */
+  .tabs { display: flex; gap: 6px; margin: 0 0 16px; }
+  .tab {
+    flex: 1;
+    padding: 8px 0;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--dim);
+    background: transparent;
+    border: 1px solid #3A3F4B;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+  .tab.active { color: #14161B; background: var(--paper); border-color: var(--paper); }
+
+  .level-grid { text-align: left; margin: 0 0 12px; }
+  .level-row {
+    display: flex;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid #2C303A;
+    font-family: var(--mono);
+    font-size: 13px;
+  }
+  .level-row .lv-num { width: 40px; color: var(--dim); font-weight: 700; }
+  .level-row .lv-stars { flex: 1; letter-spacing: 2px; }
+  .level-row .lv-time { color: var(--ink); text-align: right; }
+
+  .star-off { opacity: 0.25; }
+  .stars-display { font-size: 28px; letter-spacing: 6px; margin: 8px 0 12px; }
+
+  .new-best {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    color: #E8C77A;
+    letter-spacing: 0.1em;
+    animation: bestPulse 1.2s ease-in-out infinite;
+  }
+  @keyframes bestPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  .dp-bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; margin: 8px 0 14px; }
+  .dp-bar-p1 { background: #6CB4EE; }
+  .dp-bar-p2 { background: #E8746C; }
+  .dp-bar-draw { background: #6E6C66; }
+
+  .stat-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #2C303A;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--dim);
+  }
+  .stat-row .stat-val { color: var(--ink); font-weight: 700; }
 </style>
 </head>
 <body>
@@ -561,6 +624,153 @@ function soundVictory() {
       playSynthTone(freq, 'sine', 0.25, 0.12);
     }, idx * 90);
   });
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SCOREBOARD — persistent stats via localStorage
+   ═══════════════════════════════════════════════════════════════════════ */
+
+const STATS_KEY = 'dont_fall_in_stats';
+
+function defaultStats() {
+  return {
+    v: 1,
+    sp: { levels: {}, allCleared: false },
+    dp: { played: 0, p1Wins: 0, p2Wins: 0, draws: 0 },
+    net: { played: 0, wins: 0, losses: 0 }
+  };
+}
+
+let stats = loadStats();
+
+function loadStats() {
+  try {
+    const raw = localStorage.getItem(STATS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.v === 1) return parsed;
+    }
+  } catch {}
+  return defaultStats();
+}
+
+function saveStats() {
+  try { localStorage.setItem(STATS_KEY, JSON.stringify(stats)); } catch {}
+}
+
+function resetStats() {
+  stats = defaultStats();
+  saveStats();
+}
+
+/**
+ * Star thresholds scale with level difficulty.
+ * L1: 3★ ≤ 6.5s, 2★ ≤ 13s   |   L6: 3★ ≤ 14s, 2★ ≤ 28s   |   L12: 3★ ≤ 23s, 2★ ≤ 46s
+ */
+function getStars(level, timeMs) {
+  const base = 5000 + level * 1500;
+  if (timeMs <= base) return 3;
+  if (timeMs <= base * 2) return 2;
+  return 1;
+}
+
+function recordLevelResult(level, timeMs, crossed) {
+  const key = String(level);
+  if (!stats.sp.levels[key]) {
+    stats.sp.levels[key] = { best: null, stars: 0, attempts: 0, clears: 0 };
+  }
+  const lv = stats.sp.levels[key];
+  lv.attempts++;
+  if (crossed) {
+    lv.clears++;
+    const s = getStars(level, timeMs);
+    if (s > lv.stars) lv.stars = s;
+    if (lv.best === null || timeMs < lv.best) lv.best = timeMs;
+  }
+  let allDone = true;
+  for (let i = 1; i <= 12; i++) {
+    const l = stats.sp.levels[String(i)];
+    if (!l || l.clears === 0) { allDone = false; break; }
+  }
+  stats.sp.allCleared = allDone;
+  saveStats();
+}
+
+function recordDuel(winner) {
+  stats.dp.played++;
+  if (winner === 'p1') stats.dp.p1Wins++;
+  else if (winner === 'p2') stats.dp.p2Wins++;
+  else stats.dp.draws++;
+  saveStats();
+}
+
+function recordRace(won) {
+  stats.net.played++;
+  if (won) stats.net.wins++;
+  else stats.net.losses++;
+  saveStats();
+}
+
+function starsHtml(count) {
+  let h = '';
+  for (let i = 0; i < 3; i++) {
+    h += i < count ? '⭐' : '<span class="star-off">☆</span>';
+  }
+  return h;
+}
+
+function buildStatsTab(tab) {
+  if (tab === 'sp') {
+    let totalStars = 0;
+    let rows = '';
+    for (let i = 1; i <= 12; i++) {
+      const l = stats.sp.levels[String(i)];
+      if (l && l.clears > 0) {
+        totalStars += l.stars;
+        rows += `<div class="level-row">
+          <span class="lv-num">Lv${i}</span>
+          <span class="lv-stars">${starsHtml(l.stars)}</span>
+          <span class="lv-time">${(l.best / 1000).toFixed(1)}s</span>
+        </div>`;
+      } else {
+        const attempts = l ? l.attempts : 0;
+        rows += `<div class="level-row">
+          <span class="lv-num">Lv${i}</span>
+          <span class="lv-stars">${starsHtml(0)}</span>
+          <span class="lv-time" style="color:#3A3F4B">${attempts > 0 ? attempts + ' tries' : '—'}</span>
+        </div>`;
+      }
+    }
+    return `
+      <div class="level-grid">${rows}</div>
+      <p class="stat">Total ⭐ ${totalStars} / 36</p>
+      ${stats.sp.allCleared ? '<p class="stat" style="color:#E8C77A">🏆 All 12 Levels Cleared!</p>' : ''}`;
+  } else if (tab === 'dp') {
+    const d = stats.dp;
+    const total = d.p1Wins + d.p2Wins + d.draws;
+    if (total === 0) return '<p style="color:#3A3F4B;font-family:var(--mono);font-size:13px;margin:16px 0">No duels played yet.</p>';
+    const p1Pct = Math.round(d.p1Wins / total * 100);
+    const p2Pct = Math.round(d.p2Wins / total * 100);
+    const drPct = 100 - p1Pct - p2Pct;
+    return `
+      <div class="stat-row"><span>Duels Played</span><span class="stat-val">${d.played}</span></div>
+      <div class="dp-bar">
+        <div class="dp-bar-p1" style="width:${p1Pct}%"></div>
+        <div class="dp-bar-draw" style="width:${drPct}%"></div>
+        <div class="dp-bar-p2" style="width:${p2Pct}%"></div>
+      </div>
+      <div class="stat-row"><span>P1 Wins</span><span class="stat-val">${d.p1Wins}</span></div>
+      <div class="stat-row"><span>P2 Wins</span><span class="stat-val">${d.p2Wins}</span></div>
+      <div class="stat-row"><span>Draws</span><span class="stat-val">${d.draws}</span></div>`;
+  } else {
+    const n = stats.net;
+    if (n.played === 0) return '<p style="color:#3A3F4B;font-family:var(--mono);font-size:13px;margin:16px 0">No online races yet.</p>';
+    return `
+      <div class="stat-row"><span>Races Played</span><span class="stat-val">${n.played}</span></div>
+      <div class="stat-row"><span>Wins</span><span class="stat-val">${n.wins}</span></div>
+      <div class="stat-row"><span>Losses</span><span class="stat-val">${n.losses}</span></div>
+      <div class="stat-row"><span>Win Rate</span><span class="stat-val">${Math.round(n.wins / n.played * 100)}%</span></div>`;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -1407,6 +1617,7 @@ function onFell() {
   game.pointerId = null;
   soundDrop();
   if (!reduceMotion) game.shake = T.SHAKE_MS;
+  if (game.mode === '1p') recordLevelResult(game.level, game.elapsed, false);
   if (isDuel()) return endRound(false);
   showScreen('fell');
 }
@@ -1416,6 +1627,12 @@ function onFinish() {
   game.pointerId = null;
   game.state = 'cleared';
   soundVictory();
+  if (game.mode === '1p') {
+    const prev = stats.sp.levels[String(game.level)];
+    game.isNewBest = !prev || prev.best === null || game.elapsed < prev.best;
+    game.earnedStars = getStars(game.level, game.elapsed);
+    recordLevelResult(game.level, game.elapsed, true);
+  }
   if (isDuel()) return endRound(true);
   if (game.level >= T.LEVELS) {
     game.state = 'won';
@@ -1437,6 +1654,7 @@ function endRound(crossed) {
     if ((win === 1 && a.crossed) || (win === 2 && b.crossed)) {
       triggerVictoryFireworks(4);
     }
+    recordDuel(win === 1 ? 'p1' : win === 2 ? 'p2' : 'draw');
   }
   showScreen(game.round === 1 ? 'roundover' : 'duelover');
 }
@@ -1476,6 +1694,7 @@ function settleRace() {
     game.pointerId = null;
     const peerRes = net.peerDone || { crossed: false, progress: progressOf(net.peerTip.y), time: game.elapsed };
     game.results = [net.myDone, peerRes];
+    recordRace(true);
     triggerVictoryFireworks(5);
     showScreen('raceover');
     return;
@@ -1495,6 +1714,7 @@ function settleRace() {
   game.state = 'raceover';
   game.results = [net.myDone, net.peerDone];
   const win = judgeDuel(net.myDone, net.peerDone);
+  recordRace(win === 1);
 
   // Trigger fireworks ONLY if the winner actually crossed the finish line!
   if ((win === 1 && net.myDone.crossed) || (win === 2 && net.peerDone.crossed)) {
@@ -1984,6 +2204,7 @@ function showScreen(kind) {
       <button id="btn-primary">One player</button>
       <button id="btn-secondary" class="ghost">Two players, one phone</button>
       <button id="btn-third" class="ghost"${canGoOnline ? '' : ' disabled'}>Two phones</button>
+      <button id="btn-stats" class="ghost">📊 Scoreboard</button>
       <p class="hint">${canGoOnline
         ? 'Tap and drag the bump. You can also use arrow keys.'
         : 'To play on two phones, run <strong>node server.js</strong> on your computer and open the link it shows.'}</p>`;
@@ -2134,17 +2355,39 @@ function showScreen(kind) {
       <button id="btn-primary">Try again</button>
       <button id="btn-secondary" class="ghost">Back to start</button>`;
   } else if (kind === 'cleared') {
+    const earnedStars = game.earnedStars || 1;
+    const isNewBest = game.isNewBest || false;
     html = `
       <h2 id="card-title">Level complete!</h2>
       <p class="tight">Level ${game.level} of ${T.LEVELS} done.</p>
-      <p class="stat">${fmt(game.elapsed)}s</p>
+      <div class="stars-display">${starsHtml(earnedStars)}</div>
+      <p class="stat">${fmt(game.elapsed)}s${isNewBest ? ' · <span class="new-best">🏆 New Best!</span>' : ''}</p>
       <p>Next level has more holes, packed tighter!</p>
       <button id="btn-primary">Next level</button>`;
   } else if (kind === 'won') {
+    let totalStars = 0;
+    for (let i = 1; i <= T.LEVELS; i++) {
+      const l = stats.sp.levels[String(i)];
+      if (l) totalStars += l.stars;
+    }
     html = `
       <h2 id="card-title">You beat all<br>12 levels!</h2>
       <p>You made it through every level without falling. Amazing job!</p>
-      <button id="btn-primary">Play again</button>`;
+      <p class="stat">⭐ ${totalStars} / ${T.LEVELS * 3}</p>
+      <button id="btn-primary">Play again</button>
+      <button id="btn-stats" class="ghost">📊 Scoreboard</button>`;
+  } else if (kind === 'stats') {
+    html = `
+      <h2 id="card-title">📊 Scoreboard</h2>
+      <div class="tabs">
+        <button class="tab active" data-tab="sp">Single</button>
+        <button class="tab" data-tab="dp">2P Local</button>
+        <button class="tab" data-tab="net">Online</button>
+      </div>
+      <div id="stats-body">${buildStatsTab('sp')}</div>
+      <div class="rule"></div>
+      <button id="btn-reset" class="ghost" style="font-size:12px;padding:10px">🔄 Reset All Stats</button>
+      <button id="btn-secondary" class="ghost">← Back</button>`;
   }
 
   card.innerHTML = html;
@@ -2176,6 +2419,7 @@ function showScreen(kind) {
     secondary.onclick = () => {
       soundClick();
       if (kind === 'title') return startDuel();
+      if (kind === 'stats') return showScreen('title');
       if (kind === 'netmenu') return showScreen('joining');
       if (kind === 'joining' || kind === 'hosting') { closeSocket(); return showScreen('netmenu'); }
       leaveOnline();
@@ -2187,6 +2431,30 @@ function showScreen(kind) {
       soundClick();
       if (kind === 'title') { if (canGoOnline) showScreen('netmenu'); }
       else if (kind === 'netmenu') leaveOnline();
+    };
+  }
+
+  // Stats & scoreboard button
+  const statsBtn = card.querySelector('#btn-stats');
+  if (statsBtn) statsBtn.onclick = () => { soundClick(); showScreen('stats'); };
+
+  // Stats screen: tab switching & reset
+  if (kind === 'stats') {
+    card.querySelectorAll('.tab').forEach(btn => {
+      btn.onclick = () => {
+        soundClick();
+        card.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('stats-body').innerHTML = buildStatsTab(btn.dataset.tab);
+      };
+    });
+    const resetBtn = card.querySelector('#btn-reset');
+    if (resetBtn) resetBtn.onclick = () => {
+      soundClick();
+      if (confirm('Reset all stats? This cannot be undone.')) {
+        resetStats();
+        showScreen('stats');
+      }
     };
   }
 
