@@ -1676,6 +1676,36 @@ function tipInHole(x, y) {
   return false;
 }
 
+/**
+ * Calculate net gravitational pull (suction) offset for position (x, y)
+ * at the given level difficulty. Starts at Level 3+.
+ */
+function getHoleSuctionOffset(x, y, level) {
+  if (!level || level < 3 || !game.sheet || !game.sheet.holes) return { dx: 0, dy: 0 };
+
+  const levelFactor = Math.min(1, (level - 2) / 10);
+  const pullDist = 12 + levelFactor * 22;
+  const maxStrength = 0.5 + levelFactor * 2.0;
+
+  let netDx = 0, netDy = 0;
+  const holes = game.sheet.holes;
+  for (let i = 0; i < holes.length; i++) {
+    const h = holes[i];
+    const dx = h.x - x;
+    const dy = h.y - y;
+    const dist = Math.hypot(dx, dy);
+    const maxRange = h.r + pullDist;
+
+    if (dist > 1.0 && dist < maxRange) {
+      const factor = 1 - Math.max(0, dist - h.r) / pullDist;
+      const pull = Math.pow(factor, 2) * maxStrength;
+      netDx += (dx / dist) * pull;
+      netDy += (dy / dist) * pull;
+    }
+  }
+  return { dx: netDx, dy: netDy };
+}
+
 /** Clamp a position to the punched band. */
 function clampX(x) { return Math.max(PLAY_LEFT, Math.min(PLAY_RIGHT, x)); }
 function clampY(y) { return Math.max(PAPER.y + 2, Math.min(PAPER.y + PAPER.h - 2, y)); }
@@ -1695,6 +1725,12 @@ function setTarget(x, y) {
  * that the diagonal passes straight through.
  */
 function advanceTip(tx, ty, surfFrom, surfTo) {
+  if (game.state === 'playing' && game.mode === '1p') {
+    const suction = getHoleSuctionOffset(tx, ty, game.level);
+    tx += suction.dx;
+    ty += suction.dy;
+  }
+
   tx = clampX(tx);
   ty = clampY(ty);
 
@@ -2784,6 +2820,33 @@ function render() {
     PAPER.w + PRINT_MARGIN * 2, PAPER.h
   );
   ctx.restore();
+
+  // Visual whirlpool danger zone aura for active suction holes (Level 3+)
+  if (game.level >= 3 && game.sheet && game.sheet.holes) {
+    const levelFactor = Math.min(1, (game.level - 2) / 10);
+    const pullDist = 12 + levelFactor * 22;
+    const timeMs = performance.now() * 0.002;
+    ctx.save();
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 4]);
+
+    for (let i = 0; i < game.sheet.holes.length; i++) {
+      const h = game.sheet.holes[i];
+      const hx = h.x + surfaceX;
+      const hy = h.y;
+
+      if (hy < PAPER.y - 30 || hy > PAPER.y + PAPER.h + 30) continue;
+
+      const pulse = 0.5 + 0.5 * Math.sin(timeMs + h.x * 0.08 + h.y * 0.04);
+      const auraR = h.r + 4 + (pullDist - 4) * pulse;
+
+      ctx.strokeStyle = `rgba(180, 120, 240, ${0.12 + levelFactor * 0.16})`;
+      ctx.beginPath();
+      ctx.arc(hx, hy, auraR, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
 
   const live = game.state === 'ready' || game.state === 'countdown' ||
                game.state === 'playing' || game.state === 'cleared' ||
