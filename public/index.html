@@ -3048,8 +3048,6 @@ function render() {
     const pullDist = 18 + levelFactor * 36;
     const timeSec = performance.now() * 0.001;
     ctx.save();
-    ctx.shadowColor = 'rgba(170, 90, 240, 0.7)';
-    ctx.shadowBlur = 5;
 
     for (let i = 0; i < game.sheet.holes.length; i++) {
       const h = game.sheet.holes[i];
@@ -3058,29 +3056,36 @@ function render() {
 
       if (hy < PAPER.y - 30 || hy > PAPER.y + PAPER.h + 30) continue;
 
-      const pulse1 = 0.5 + 0.5 * Math.sin(timeSec * 3 + h.x * 0.08 + h.y * 0.04);
-      const pulse2 = 0.5 + 0.5 * Math.cos(timeSec * 3.5 + h.x * 0.06 + h.y * 0.03);
+      const maxR = h.r + pullDist;
 
-      const r1 = h.r + 3 + (pullDist - 3) * pulse1;
-      const r2 = h.r + (pullDist * 0.55) * pulse2;
+      // 1. Soft Radial Gradient Glow (subtle velvety depth)
+      const grad = ctx.createRadialGradient(hx, hy, h.r, hx, hy, maxR);
+      grad.addColorStop(0.00, `rgba(180, 100, 240, ${0.28 + levelFactor * 0.16})`);
+      grad.addColorStop(0.55, `rgba(160, 80, 230, ${0.12 + levelFactor * 0.10})`);
+      grad.addColorStop(1.00, 'rgba(140, 60, 220, 0)');
 
-      // Outer pulsing high-contrast aura ring
-      ctx.lineWidth = 2.2;
-      ctx.setLineDash([5, 4]);
-      ctx.strokeStyle = `rgba(180, 80, 240, ${0.42 + levelFactor * 0.35})`;
+      ctx.fillStyle = grad;
       ctx.beginPath();
-      ctx.arc(hx, hy, r1, 0, Math.PI * 2);
-      ctx.stroke();
+      ctx.arc(hx, hy, maxR, 0, Math.PI * 2);
+      ctx.fill();
 
-      // Inner danger core ring
-      if (r2 > h.r + 2) {
-        ctx.lineWidth = 1.6;
-        ctx.setLineDash([3, 3]);
-        ctx.strokeStyle = `rgba(230, 100, 255, ${0.35 + levelFactor * 0.30})`;
-        ctx.beginPath();
-        ctx.arc(hx, hy, r2, 0, Math.PI * 2);
-        ctx.stroke();
+      // 2. Animated Rotating Swirl Spiral (sleek 1.2px line)
+      const rot = timeSec * 2.5 + h.x * 0.1 + h.y * 0.05;
+      ctx.lineWidth = 1.2;
+      ctx.setLineDash([]);
+      ctx.strokeStyle = `rgba(225, 160, 255, ${0.45 + levelFactor * 0.30})`;
+      ctx.beginPath();
+      const steps = 24;
+      for (let s = 0; s <= steps; s++) {
+        const frac = s / steps;
+        const angle = rot + frac * Math.PI * 2.2;
+        const r = h.r + 2 + (pullDist - 3) * frac;
+        const px = hx + Math.cos(angle) * r;
+        const py = hy + Math.sin(angle) * r;
+        if (s === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
       }
+      ctx.stroke();
     }
     ctx.restore();
   }
