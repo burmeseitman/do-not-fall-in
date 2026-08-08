@@ -414,15 +414,17 @@
     gap: 6px;
     margin: 0 0 16px;
   }
-  .tab {
-    height: 42px;
-    padding: 0 4px;
+  .card .tabs button.tab {
     display: flex;
     align-items: center;
     justify-content: center;
+    height: 40px;
+    margin-top: 0;
+    padding: 0 4px;
     font-family: var(--mono);
     font-size: 12px;
     font-weight: 700;
+    line-height: 1;
     letter-spacing: 0.04em;
     text-transform: uppercase;
     color: var(--dim);
@@ -432,7 +434,11 @@
     cursor: pointer;
     box-sizing: border-box;
   }
-  .tab.active { color: #14161B; background: var(--paper); border-color: var(--paper); }
+  .card .tabs button.tab.active {
+    color: #14161B;
+    background: var(--paper);
+    border-color: var(--paper);
+  }
 
   .level-grid { text-align: left; margin: 0 0 12px; }
   .level-row {
