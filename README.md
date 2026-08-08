@@ -2,19 +2,13 @@
 
 > A minimalist, physics-based paper pencil precision web browser game featuring 12 single-player levels, unlockable skins, tactile 3D paper physics, local same-phone duels, and real-time 2-phone online races with Global Leaderboards over Cloudflare Durable Objects SQLite.
 
-[![Live Production Demo](https://img.shields.io/badge/Live--Demo-dontfallin.burmesestack.com-blue?style=for-the-badge&logo=cloudflare)](https://dontfallin.burmesestack.com)
-[![Deploy to Cloudflare Workers](https://img.shields.io/badge/Deploy-Cloudflare%20Workers-orange?logo=cloudflare)](https://workers.cloudflare.com/)
-[![Built with HTML5 Canvas](https://img.shields.io/badge/Built%20with-HTML5%20Canvas-red)](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API)
-[![PWA Ready](https://img.shields.io/badge/PWA-Ready-brightgreen)](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps)
-[![License: Source-Available](https://img.shields.io/badge/License-Source--Available-red.svg)](LICENSE)
-
----
-
-## 🌐 Live Production Application
-
-- **Custom Domain**: 👉 **[https://dontfallin.burmesestack.com](https://dontfallin.burmesestack.com)**
-- **Cloudflare Workers Subdomain**: 👉 **[https://dont-fall-in.burmesestack.workers.dev](https://dont-fall-in.burmesestack.workers.dev)**
-- **GitHub Repository**: 👉 **[https://github.com/burmeseitman/do-not-fall-in](https://github.com/burmeseitman/do-not-fall-in)**
+![Cloudflare Workers](https://img.shields.io/badge/Cloudflare_Workers-F38020?style=flat-square&logo=cloudflare&logoColor=white)
+![HTML5 Canvas](https://img.shields.io/badge/HTML5_Canvas-E34F26?style=flat-square&logo=html5&logoColor=white)
+![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat-square&logo=javascript&logoColor=black)
+![Node.js](https://img.shields.io/badge/Node.js-339933?style=flat-square&logo=nodedotjs&logoColor=white)
+![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white)
+![PWA Ready](https://img.shields.io/badge/PWA-Ready-5A0FC8?style=flat-square&logo=pwa&logoColor=white)
+![License](https://img.shields.io/badge/License-Source--Available-CC0000?style=flat-square)
 
 ---
 
