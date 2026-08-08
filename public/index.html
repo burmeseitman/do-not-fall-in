@@ -537,6 +537,33 @@
     color: #14161B !important;
     border: none !important;
   }
+
+  /* ---- Hazard Card ------------------------------------------------ */
+  .hazard-card {
+    margin: 12px 0 16px;
+    padding: 12px 14px;
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.45;
+    text-align: left;
+    box-sizing: border-box;
+  }
+  .hazard-card.info {
+    background: rgba(108, 180, 238, 0.12);
+    border: 1px solid rgba(108, 180, 238, 0.4);
+    color: #92C6FF;
+  }
+  .hazard-card.warning {
+    background: rgba(190, 110, 240, 0.14);
+    border: 1px solid rgba(190, 110, 240, 0.5);
+    color: #E2B2FF;
+  }
+  .hazard-card.danger {
+    background: rgba(232, 74, 95, 0.16);
+    border: 1px solid rgba(232, 74, 95, 0.5);
+    color: #FFA5B2;
+  }
 </style>
 </head>
 <body>
@@ -1587,7 +1614,11 @@ function startRun() {
 function loadSheet() {
   game.sheet = generateSheet(game.level, sheetSeed(game.runSeed, game.level));
   rebuildLayers();
-  startRound();
+  if (game.mode === '1p') {
+    showScreen('levelintro');
+  } else {
+    startRound();
+  }
 }
 
 /** Reset everything about an attempt without touching the sheet itself. */
@@ -2687,6 +2718,24 @@ function showScreen(kind) {
       <div class="skins-grid">${skinListHtml}</div>
       <div class="rule"></div>
       <button id="btn-secondary" class="ghost">← Back</button>`;
+  } else if (kind === 'levelintro') {
+    let hazardNoticeHtml = '';
+    if (game.level === 1) {
+      hazardNoticeHtml = `<div class="hazard-card info">💡 <strong>Beginner Tip:</strong> Drag smooth and steady from bottom to top to stay in control!</div>`;
+    } else if (game.level >= 2 && game.level <= 8) {
+      hazardNoticeHtml = `<div class="hazard-card warning">🌀 <strong>HAZARD: Gravitational Suction Pull!</strong><br>Holes in Level ${game.level} exert magnetic suction pull! If you get close, drag firmly in the opposite direction to escape!</div>`;
+    } else if (game.level >= 9) {
+      hazardNoticeHtml = `<div class="hazard-card danger">⚡ <strong>EXTREME HAZARD: Shifting Corridors!</strong><br>Holes now oscillate back & forth in real-time with strong Suction Pull! Time your moves through shifting gaps carefully!</div>`;
+    }
+
+    const goalTimeMs = 5000 + game.level * 1500;
+    html = `
+      <h2 id="card-title">Level ${game.level} of ${T.LEVELS}</h2>
+      <p class="stat">⭐ Goal: < ${(goalTimeMs / 1000).toFixed(1)}s for 3 Stars</p>
+      ${hazardNoticeHtml}
+      <div class="rule"></div>
+      <button id="btn-primary">Start Level ${game.level}</button>
+      <button id="btn-secondary" class="ghost">Main Menu</button>`;
   }
 
   card.innerHTML = html;
@@ -2700,6 +2749,7 @@ function showScreen(kind) {
   if (primary) primary.onclick = () => {
     soundClick();
     if (kind === 'title' || kind === 'won') startRun();
+    else if (kind === 'levelintro') startRound();
     else if (kind === 'fell') loadSheet();
     else if (kind === 'cleared') { game.level++; loadSheet(); }
     // Two players, one device. The sheet is never regenerated between rounds.
