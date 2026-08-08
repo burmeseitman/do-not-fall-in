@@ -669,6 +669,12 @@ function playSynthTone(freqs, type, duration, vol = 0.15) {
   } catch {}
 }
 
+function vibrateHaptic(pattern) {
+  if (typeof navigator !== 'undefined' && navigator.vibrate) {
+    try { navigator.vibrate(pattern); } catch {}
+  }
+}
+
 function soundDrop() {
   playSynthTone([420, 90], 'sine', 0.35, 0.25);
 }
@@ -679,6 +685,12 @@ function soundShake() {
 
 function soundClick() {
   playSynthTone(550, 'sine', 0.04, 0.08);
+}
+
+function soundSuction(intensity) {
+  if (soundMuted) return;
+  const f0 = 120 + Math.min(180, (intensity || 1) * 45);
+  playSynthTone([f0, 60], 'sawtooth', 0.12, 0.08);
 }
 
 function soundVictory() {
@@ -1859,6 +1871,7 @@ function onFell() {
   game.dragging = false;
   game.pointerId = null;
   soundDrop();
+  vibrateHaptic([40, 30, 80]);
   if (!reduceMotion) game.shake = T.SHAKE_MS;
   if (game.mode === '1p') recordLevelResult(game.level, game.elapsed, false);
   if (isDuel()) return endRound(false);
@@ -1870,6 +1883,7 @@ function onFinish() {
   game.pointerId = null;
   game.state = 'cleared';
   soundVictory();
+  vibrateHaptic([30, 50, 30, 50, 90]);
   if (game.mode === '1p') {
     const prev = stats.sp.levels[String(game.level)];
     game.isNewBest = !prev || prev.best === null || game.elapsed < prev.best;
@@ -3244,6 +3258,15 @@ function step(now) {
           const k = dt / 16.6;
           game.target.x = clampX(game.target.x + suction.dx * k);
           game.target.y = clampY(game.target.y + suction.dy * k);
+
+          // Mobile haptic vibration & sound feedback when trapped in suction pull
+          const pullMag = Math.hypot(suction.dx, suction.dy);
+          if (pullMag > 0.8) {
+            vibrateHaptic(12);
+            if (Math.random() < 0.12) {
+              soundSuction(pullMag);
+            }
+          }
         }
       }
 
