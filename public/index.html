@@ -738,7 +738,7 @@ function soundVictory() {
    ═══════════════════════════════════════════════════════════════════════ */
 
 const SKINS = [
-  { id: 'classic',  name: 'Classic Lead',   stars: 0,  dot: '#3B3F48', halo: 'rgba(59,63,72,0.22)',   badge: '✏️' },
+  { id: 'classic',  name: 'Classic Blue',   stars: 0,  dot: '#2563EB', halo: 'rgba(37,99,235,0.35)',   badge: '🔵' },
   { id: 'ruby',     name: 'Crimson Ruby',   stars: 6,  dot: '#E84A5F', halo: 'rgba(232,74,95,0.30)',  badge: '🔴' },
   { id: 'electric', name: 'Electric Neon',  stars: 15, dot: '#00F5D4', halo: 'rgba(0,245,212,0.35)',  badge: '⚡' },
   { id: 'gold',     name: 'Golden Master',  stars: 27, dot: '#FFD700', halo: 'rgba(255,215,0,0.40)',  badge: '🌟' },
@@ -1133,8 +1133,8 @@ const C = {
  * card, which is unreadable.
  */
 const PLAYER = {
-  host:  { name: 'Graphite', ui: '#B9BEC9',
-           dot: 'rgba(43,46,54,0.94)',   halo: 'rgba(59,63,72,0.20)' },
+  host:  { name: 'Blue',     ui: '#6CB4EE',
+           dot: 'rgba(37,99,235,0.94)',   halo: 'rgba(37,99,235,0.35)' },
   guest: { name: 'Red',      ui: '#D8695C',
            dot: 'rgba(168,58,46,0.94)',  halo: 'rgba(168,58,46,0.22)' },
 };
@@ -3042,7 +3042,7 @@ function render() {
     ctx.restore();
   }
 
-  // Visual whirlpool danger zone aura for active suction holes (Level 2+)
+  // Visual suction danger zone aura for active suction holes (Level 2+) — Idea 2: 3D Paper Funnel Shadow
   if (game.level >= 2 && game.sheet && game.sheet.holes) {
     const levelFactor = Math.min(1, game.level / 12);
     const pullDist = 18 + levelFactor * 36;
@@ -3056,35 +3056,25 @@ function render() {
 
       if (hy < PAPER.y - 30 || hy > PAPER.y + PAPER.h + 30) continue;
 
-      const maxR = h.r + pullDist;
+      const auraR = h.r + pullDist;
 
-      // 1. Soft Radial Gradient Glow (subtle velvety depth)
-      const grad = ctx.createRadialGradient(hx, hy, h.r, hx, hy, maxR);
-      grad.addColorStop(0.00, `rgba(180, 100, 240, ${0.28 + levelFactor * 0.16})`);
-      grad.addColorStop(0.55, `rgba(160, 80, 230, ${0.12 + levelFactor * 0.10})`);
-      grad.addColorStop(1.00, 'rgba(140, 60, 220, 0)');
+      // 1. Soft 3D Paper Indentation Shadow (makes the hole look like a physical sunken pit/funnel)
+      const sg = ctx.createRadialGradient(hx + 1.8, hy + 2.4, h.r * 0.8, hx + 1.2, hy + 1.8, auraR);
+      sg.addColorStop(0.00, `rgba(32, 24, 16, ${0.42 + levelFactor * 0.20})`); // Sunken rim shadow
+      sg.addColorStop(0.48, `rgba(75, 58, 38, ${0.18 + levelFactor * 0.12})`); // Soft paper crease gradient
+      sg.addColorStop(1.00, 'rgba(110, 90, 65, 0)');                         // Fades out into paper
 
-      ctx.fillStyle = grad;
+      ctx.fillStyle = sg;
       ctx.beginPath();
-      ctx.arc(hx, hy, maxR, 0, Math.PI * 2);
+      ctx.arc(hx, hy, auraR, 0, Math.PI * 2);
       ctx.fill();
 
-      // 2. Animated Rotating Swirl Spiral (sleek 1.2px line)
-      const rot = timeSec * 2.5 + h.x * 0.1 + h.y * 0.05;
-      ctx.lineWidth = 1.2;
-      ctx.setLineDash([]);
-      ctx.strokeStyle = `rgba(225, 160, 255, ${0.45 + levelFactor * 0.30})`;
+      // 2. Subtle Outer Pencil Crease Ring
+      ctx.lineWidth = 1.1;
+      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = `rgba(75, 58, 38, ${(0.32 + levelFactor * 0.20).toFixed(2)})`;
       ctx.beginPath();
-      const steps = 24;
-      for (let s = 0; s <= steps; s++) {
-        const frac = s / steps;
-        const angle = rot + frac * Math.PI * 2.2;
-        const r = h.r + 2 + (pullDist - 3) * frac;
-        const px = hx + Math.cos(angle) * r;
-        const py = hy + Math.sin(angle) * r;
-        if (s === 0) ctx.moveTo(px, py);
-        else ctx.lineTo(px, py);
-      }
+      ctx.arc(hx, hy, auraR, 0, Math.PI * 2);
       ctx.stroke();
     }
     ctx.restore();
