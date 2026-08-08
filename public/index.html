@@ -210,11 +210,11 @@
 
   .card {
     width: 100%;
-    max-width: 340px;
+    max-width: 350px;
     background: var(--card);
     border: 1px solid #2C303A;
     border-radius: 4px;
-    padding: 28px 24px 24px;
+    padding: 28px 20px 24px;
     box-shadow: 0 18px 44px rgba(0,0,0,0.6);
     text-align: center;
   }
@@ -408,20 +408,24 @@
   .pip.on { background: var(--paper); box-shadow: none; }
 
   /* ---- Scoreboard / Stats ------------------------------------------- */
-  .tabs { display: flex; gap: 6px; margin: 0 0 16px; }
+  .tabs { display: flex; gap: 4px; margin: 0 0 16px; }
   .tab {
     flex: 1;
-    padding: 8px 0;
+    min-width: 0;
+    padding: 8px 2px;
     font-family: var(--mono);
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 700;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.02em;
     text-transform: uppercase;
     color: var(--dim);
     background: transparent;
     border: 1px solid #3A3F4B;
     border-radius: 3px;
     cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .tab.active { color: #14161B; background: var(--paper); border-color: var(--paper); }
 
