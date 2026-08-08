@@ -3048,8 +3048,8 @@ function render() {
     const pullDist = 18 + levelFactor * 36;
     const timeSec = performance.now() * 0.001;
     ctx.save();
-    ctx.lineWidth = 1;
-    ctx.setLineDash([3, 4]);
+    ctx.shadowColor = 'rgba(170, 90, 240, 0.7)';
+    ctx.shadowBlur = 5;
 
     for (let i = 0; i < game.sheet.holes.length; i++) {
       const h = game.sheet.holes[i];
@@ -3058,13 +3058,29 @@ function render() {
 
       if (hy < PAPER.y - 30 || hy > PAPER.y + PAPER.h + 30) continue;
 
-      const pulse = 0.5 + 0.5 * Math.sin(timeSec * 2 + h.x * 0.08 + h.y * 0.04);
-      const auraR = h.r + 3 + (pullDist - 3) * pulse;
+      const pulse1 = 0.5 + 0.5 * Math.sin(timeSec * 3 + h.x * 0.08 + h.y * 0.04);
+      const pulse2 = 0.5 + 0.5 * Math.cos(timeSec * 3.5 + h.x * 0.06 + h.y * 0.03);
 
-      ctx.strokeStyle = `rgba(190, 110, 240, ${0.14 + levelFactor * 0.20})`;
+      const r1 = h.r + 3 + (pullDist - 3) * pulse1;
+      const r2 = h.r + (pullDist * 0.55) * pulse2;
+
+      // Outer pulsing high-contrast aura ring
+      ctx.lineWidth = 2.2;
+      ctx.setLineDash([5, 4]);
+      ctx.strokeStyle = `rgba(180, 80, 240, ${0.42 + levelFactor * 0.35})`;
       ctx.beginPath();
-      ctx.arc(hx, hy, auraR, 0, Math.PI * 2);
+      ctx.arc(hx, hy, r1, 0, Math.PI * 2);
       ctx.stroke();
+
+      // Inner danger core ring
+      if (r2 > h.r + 2) {
+        ctx.lineWidth = 1.6;
+        ctx.setLineDash([3, 3]);
+        ctx.strokeStyle = `rgba(230, 100, 255, ${0.35 + levelFactor * 0.30})`;
+        ctx.beginPath();
+        ctx.arc(hx, hy, r2, 0, Math.PI * 2);
+        ctx.stroke();
+      }
     }
     ctx.restore();
   }
