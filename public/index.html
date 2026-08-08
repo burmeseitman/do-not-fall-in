@@ -2439,6 +2439,7 @@ function showScreen(kind) {
             ? 'Player 2 goes next on the same paper — same holes, fair match.'
             : 'Same paper that Player 1 just played.'}</p>
       <button id="btn-primary">Begin round ${game.round}</button>
+      <button id="btn-secondary" class="ghost">Back to start</button>
       <p class="hint">Paper holder: tap the side strips, or press Z / M keys.</p>`;
   // roundover / duelover are the shared-device duel only. Two phones is a
   // race now, and reports through 'raceover'.
@@ -2449,7 +2450,8 @@ function showScreen(kind) {
       <p class="tight">Player 1, on the pencil.</p>
       <p class="stat">${Math.round(r.progress * 100)}% done &nbsp;·&nbsp; ${fmt(r.time)}s</p>
       <p>Switch! Player 2 plays the same paper now.</p>
-      <button id="btn-primary">Round 2</button>`;
+      <button id="btn-primary">Round 2</button>
+      <button id="btn-secondary" class="ghost">Back to start</button>`;
 
   } else if (kind === 'duelover') {
     const [a, b] = game.results;
@@ -2488,7 +2490,8 @@ function showScreen(kind) {
       <p class="stat">${fmt(game.elapsed)}s${isNewBest ? ' · <span class="new-best">🏆 New Best!</span>' : ''}</p>
       <p id="rank-badge-text" class="rank-badge">${game.globalRank ? '🌍 Rank #' + game.globalRank + ' worldwide!' : ''}</p>
       <p>Next level has more holes, packed tighter!</p>
-      <button id="btn-primary">Next level</button>`;
+      <button id="btn-primary">Next level</button>
+      <button id="btn-secondary" class="ghost">Back to start</button>`;
   } else if (kind === 'won') {
     let totalStars = 0;
     for (let i = 1; i <= T.LEVELS; i++) {
