@@ -1205,14 +1205,30 @@ function generateSheet(level, seed) {
   for (let attempt = 0; attempt < T.MAX_ATTEMPTS; attempt++) {
     holes = layoutHoles(rand, spacing, radius, jitter);
     if (isPassable(holes)) {
-      return { level, seed, spacing, radius, holes };
+      break;
     }
   }
 
-  // Nothing passed in 40 tries: thin the sheet out until something does.
-  while (holes.length > 0 && !isPassable(holes)) {
-    holes.splice(Math.floor(rand() * holes.length), 1);
+  if (!holes || !isPassable(holes)) {
+    // Thin out until passable
+    while (holes.length > 0 && !isPassable(holes)) {
+      holes.splice(Math.floor(rand() * holes.length), 1);
+    }
   }
+
+  // Assign moving hole properties for Level 9+ (Shifting Corridors mode)
+  if (level >= 9) {
+    const moveRate = Math.min(0.45, 0.15 + (level - 9) * 0.10);
+    for (let i = 0; i < holes.length; i++) {
+      if (rand() < moveRate) {
+        holes[i].baseX = holes[i].x;
+        holes[i].amp = 10 + rand() * 18;
+        holes[i].freq = 1.2 + rand() * 1.5;
+        holes[i].phase = rand() * Math.PI * 2;
+      }
+    }
+  }
+
   return { level, seed, spacing, radius, holes };
 }
 
@@ -1298,16 +1314,17 @@ function buildPaperLayer(rs, seed) {
  * rather than a punched hole. The floor is deliberately small — push it much
  * past 2px and these holes turn into thick pale donuts instead.
  */
-function drawHole(c, h) {
+function drawHole(c, h, customX) {
   const lipR  = Math.max(h.r * 1.18, h.r + 1.9);
   const ringR = Math.max(h.r * 1.10, h.r + 1.0);
+  const hx = customX != null ? customX : h.x;
 
   const path = (radius) => {
     c.beginPath();
     for (let i = 0; i < 11; i++) {
       const a = (i / 11) * Math.PI * 2;
       const r = radius * h.shape[i];
-      const x = h.x + Math.cos(a) * r;
+      const x = hx + Math.cos(a) * r;
       const y = h.y + Math.sin(a) * r;
       if (i === 0) c.moveTo(x, y); else c.lineTo(x, y);
     }
@@ -1396,11 +1413,12 @@ function buildPrintLayer(rs, sheet) {
   c.fillText('FINISH', ox + PAPER.w / 2, FINISH_Y - PAPER.y - 9);
   c.fillText('START',  ox + PAPER.w / 2, HOLE_MAX_Y - PAPER.y + 20);
 
-  // Holes last: they are punched through the printed page, so they sit on
-  // top of the rule lines rather than under them.
+  // Holes last: static holes are punched onto printLayer; moving holes are drawn live in render()
   c.save();
   c.translate(ox - PAPER.x, -PAPER.y);
-  for (const h of sheet.holes) drawHole(c, h);
+  for (const h of sheet.holes) {
+    if (!h.amp) drawHole(c, h);
+  }
   c.restore();
 
   return { cv, c };
@@ -1664,13 +1682,22 @@ function isDuel() { return game.mode === '2p' || game.mode === 'net'; }
    finish, or dropping through.
    ═══════════════════════════════════════════════════════════════════════ */
 
+/** Calculate live X position for oscillating holes on Level 9+ */
+function getHoleX(h, timeSec) {
+  if (!h || !h.amp) return h ? h.x : 0;
+  const t = timeSec != null ? timeSec : (performance.now() * 0.001);
+  return Math.max(PLAY_LEFT + h.r + 4, Math.min(PLAY_RIGHT - h.r - 4, h.baseX + Math.sin(t * h.freq + h.phase) * h.amp));
+}
+
 function tipInHole(x, y) {
   const holes = game.sheet.holes;
+  const timeSec = performance.now() * 0.001;
   for (let i = 0; i < holes.length; i++) {
     const h = holes[i];
     const rr = h.r - T.HOLE_FORGIVENESS;
     if (rr <= 0) continue;
-    const dx = x - h.x, dy = y - h.y;
+    const hx = getHoleX(h, timeSec);
+    const dx = x - hx, dy = y - h.y;
     if (dx * dx + dy * dy < rr * rr) return true;
   }
   return false;
@@ -1686,12 +1713,14 @@ function getHoleSuctionOffset(x, y, level) {
   const levelFactor = Math.min(1, level / 12);
   const pullDist = 18 + levelFactor * 36;
   const maxStrength = 1.2 + levelFactor * 3.8;
+  const timeSec = performance.now() * 0.001;
 
   let netDx = 0, netDy = 0;
   const holes = game.sheet.holes;
   for (let i = 0; i < holes.length; i++) {
     const h = holes[i];
-    const dx = h.x - x;
+    const hx = getHoleX(h, timeSec);
+    const dx = hx - x;
     const dy = h.y - y;
     const dist = Math.hypot(dx, dy);
     const maxRange = h.r + pullDist;
@@ -2815,23 +2844,38 @@ function render() {
   );
   ctx.restore();
 
+  // Live rendering of oscillating holes (Level 9+)
+  if (game.level >= 9 && game.sheet && game.sheet.holes) {
+    const timeSec = performance.now() * 0.001;
+    ctx.save();
+    ctx.translate(surfaceX, 0);
+    for (let i = 0; i < game.sheet.holes.length; i++) {
+      const h = game.sheet.holes[i];
+      if (h.amp > 0) {
+        const hx = getHoleX(h, timeSec);
+        drawHole(ctx, h, hx);
+      }
+    }
+    ctx.restore();
+  }
+
   // Visual whirlpool danger zone aura for active suction holes (Level 2+)
   if (game.level >= 2 && game.sheet && game.sheet.holes) {
     const levelFactor = Math.min(1, game.level / 12);
     const pullDist = 18 + levelFactor * 36;
-    const timeMs = performance.now() * 0.002;
+    const timeSec = performance.now() * 0.001;
     ctx.save();
     ctx.lineWidth = 1;
     ctx.setLineDash([3, 4]);
 
     for (let i = 0; i < game.sheet.holes.length; i++) {
       const h = game.sheet.holes[i];
-      const hx = h.x + surfaceX;
+      const hx = getHoleX(h, timeSec) + surfaceX;
       const hy = h.y;
 
       if (hy < PAPER.y - 30 || hy > PAPER.y + PAPER.h + 30) continue;
 
-      const pulse = 0.5 + 0.5 * Math.sin(timeMs + h.x * 0.08 + h.y * 0.04);
+      const pulse = 0.5 + 0.5 * Math.sin(timeSec * 2 + h.x * 0.08 + h.y * 0.04);
       const auraR = h.r + 3 + (pullDist - 3) * pulse;
 
       ctx.strokeStyle = `rgba(190, 110, 240, ${0.14 + levelFactor * 0.20})`;
