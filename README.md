@@ -1,7 +1,8 @@
 # ✏️ Don't Fall In
 
-> A minimalist, physics-based paper pencil precision web browser game featuring single player challenges, local same-phone duels, and real-time 2-phone online races over Cloudflare Durable Objects.
+> A minimalist, physics-based paper pencil precision web browser game featuring 12 single-player levels, unlockable skins, tactile 3D paper physics, local same-phone duels, and real-time 2-phone online races with Global Leaderboards over Cloudflare Durable Objects SQLite.
 
+[![Live Production Demo](https://img.shields.io/badge/Live--Demo-dontfallin.burmesestack.com-blue?style=for-the-badge&logo=cloudflare)](https://dontfallin.burmesestack.com)
 [![Deploy to Cloudflare Workers](https://img.shields.io/badge/Deploy-Cloudflare%20Workers-orange?logo=cloudflare)](https://workers.cloudflare.com/)
 [![Built with HTML5 Canvas](https://img.shields.io/badge/Built%20with-HTML5%20Canvas-red)](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API)
 [![PWA Ready](https://img.shields.io/badge/PWA-Ready-brightgreen)](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps)
@@ -9,44 +10,63 @@
 
 ---
 
+## 🌐 Live Production Application
+
+- **Custom Domain**: 👉 **[https://dontfallin.burmesestack.com](https://dontfallin.burmesestack.com)**
+- **Cloudflare Workers Subdomain**: 👉 **[https://dont-fall-in.burmesestack.workers.dev](https://dont-fall-in.burmesestack.workers.dev)**
+- **GitHub Repository**: 👉 **[https://github.com/burmeseitman/do-not-fall-in](https://github.com/burmeseitman/do-not-fall-in)**
+
+---
+
 ## 📖 Overview
 
-**Don't Fall In** is a responsive, paper-pencil precision browser game. Players control a graphite pencil bump pressed up from underneath a printed sheet of paper filled with punched holes. 
+**Don't Fall In** is a responsive, paper-pencil precision browser game. Players control a pencil bump pressed up from underneath a printed sheet of paper filled with punched holes. 
 
 The objective is to guide the paper bump from the **START line at the bottom** to the **FINISH line at the top** without touching or falling into any holes along the path.
 
 ---
 
-## 🎮 Game Modes
+## ✨ Features & Game Mechanics
 
-### 1. 🎯 Single Player Mode
+### 🎯 1. Single Player Mode (12 Levels)
 - Progress through **12 progressively challenging levels**.
-- Features an automated solvability verification algorithm to guarantee every generated level is 100% winnable.
-- Includes celebratory **Canvas Particle Fireworks** upon clearing levels and completing all 12 sheets.
+- **Star Rating System**: Earn 1 to 3 Stars based on completion time thresholds.
+- **Automated Solvability Verification**: Built-in flood-fill verifier ensures every generated sheet layout is 100% passable.
+- **Pre-Level Hazard Briefings**: Interactive briefing cards informing players of level objectives, star targets, and physics hazards before starting.
 
-### 2. 📱 Two Players, One Phone (Local Shared Duel)
-- Turn-based duel played together on a single phone or tablet screen.
-- **Round 1**: Player 1 guides the pencil bump up the paper, while Player 2 taps side shake strips (or presses `Z`/`M` keys) to shake the paper sideways and knock the pencil into a hole.
+### 🌀 2. Gravitational Suction Pull & 3D Paper Funnels (Level 2+)
+- **Gravitational Suction Pull**: Starting at Level 2, holes exert magnetic gravitational attraction pulling pencil tips toward hole centers (even when stationary).
+- **Tactile 3D Paper Funnel Shadows**: Holes feature realistic 3D paper indentation drop shadows and sleek contour lines, creating a tactile physical funnel look with zero motion flicker.
+
+### ⚡ 3. Moving Holes & Shifting Corridors (Level 9–12)
+- **Ultra-Hard Endgame Mode**: On Level 9–12, 15% to 45% of holes oscillate horizontally in real-time, creating dynamic shifting corridors where safety gaps constantly open and close.
+- Real-time 60 FPS canvas rendering with dynamic collision and suction force tracking.
+
+### 🎨 4. Unlockable Pencil Skins & Custom Colors
+- Unlock custom pencil colors and glowing halos based on total stars earned across single-player levels:
+  - 🔵 **Classic Blue** (0 Stars - Default): Classic royal blue tip with blue halo.
+  - 🔴 **Crimson Ruby** (6 Stars): Ruby red tip with pink glow halo.
+  - ⚡ **Electric Neon** (15 Stars): Cyan neon tip with electric glow.
+  - 🌟 **Golden Master** (27 Stars): Metallic gold tip with gold shimmer.
+  - 🌈 **Rainbow Cycle** (36 Stars - All 12 Levels 3-Starred!): Real-time HSL color-shifting rainbow pencil tip!
+
+### 🏆 5. Scoreboard & Global Leaderboard (Cloudflare DO SQLite)
+- **Local Stats Tracker**: Tracks level best times, star ratings, attempts/clears, 2P local duel wins/draws, and online race wins/losses in `localStorage`.
+- **Global Leaderboard Backend**: Powered by Cloudflare Durable Objects SQLite (`LeaderboardHub`), upserting best player scores per level and returning real-time **World Rank Badges** (`🌍 Rank #X worldwide!`).
+
+### 🔊 6. Web Audio Synthesizer & Mobile Vibration Haptics
+- Pure Web Audio API sound effects (drop plop, victory chime arpeggio, suction hum, shake thud, tactile button clicks) with zero external file dependencies and HUD Mute toggle (`🔊 Sound` / `🔇 Muted`).
+- **Native Mobile Haptics (`navigator.vibrate`)**: Provides physical vibration feedback when trapped in suction pull zones, falling through holes, or clearing levels.
+
+### 📱 7. Two Players, One Phone (Local Shared Duel)
+- Turn-based duel on a single phone or tablet screen.
+- **Round 1**: Player 1 guides the pencil bump, while Player 2 taps side shake strips (or presses `Z`/`M` keys) to shake the paper sideways and knock the pencil into a hole.
 - **Round 2**: Player 2 takes a turn running the **exact same sheet seed layout** for a 100% fair match.
-- Powered by a custom **Global Multi-Touch Engine** ensuring pencil dragging and paper shaking run concurrently on mobile touchscreens without pointer cancellation or touch drops.
 
-### 3. 🌐 Two Phones (Real-Time Online Race)
+### 🌐 8. Two Phones (Real-Time Online Race)
 - Instant real-time race across two mobile devices over WebSockets.
 - Host creates a room to generate a **4-digit room code**.
-- Guest enters the room code and optional player name to join.
-- Both players race simultaneously on identical sheet seed layouts in real-time.
-- Features **Instant Finish-Line Victory** (first across the finish line wins immediately) and real-time opponent position tracking.
-
----
-
-## ✨ Highlights & Key Features
-
-- **📱 Global Multi-Touch Engine**: Seamlessly routes concurrent touch events on mobile phones so pencil dragging and side-strip paper shaking happen simultaneously without touch cancellation.
-- **🎵 Web Audio Synthesizer**: Pure Web Audio API sound effects (drop plop, victory chime arpeggio, shake thud, tactile button clicks) with zero external file dependencies and an interactive HUD Mute/Unmute toggle (`🔊 Sound` / `🔇 Muted`). Includes iOS Safari Web Audio auto-unlock.
-- **📱 Progressive Web App (PWA)**: Includes Web App Manifest (`manifest.json`) and SVG favicon (`favicon.svg`) for **"Add to Home Screen"** native-like playback on iOS and Android.
-- **🎆 HTML5 Canvas Fireworks**: Dynamic, physics-driven particle explosions with vibrant color palettes (Gold, Neon Cyan, Crimson, Magenta, Emerald) when clearing levels or winning matches.
-- **🌐 Cloudflare Workers & Durable Objects**: Zero-latency, stateful WebSocket room relay using Cloudflare Durable Objects and WebSocket Hibernation attachments (`ws.serializeAttachment()`) for 100% reliable state persistence across DO wakeups.
-- **🤖 Generative Engine Optimization (GEO)**: Built-in `JSON-LD` schemas (`VideoGame` and `FAQPage`), `robots.txt` AI crawler rules, `sitemap.xml`, and `/llms.txt` context document optimized for AI agents (ChatGPT, Google Gemini, Perplexity, Claude).
+- Guest enters the room code to join. Both race simultaneously on identical sheet layouts in real-time.
 
 ---
 
@@ -54,7 +74,7 @@ The objective is to guide the paper bump from the **START line at the bottom** t
 
 | Input Device | Action |
 | :--- | :--- |
-| **Touchscreen (Mobile)** | Touch anywhere on the paper canvas to seamlessly drag the pencil bump |
+| **Touchscreen (Mobile)** | Touch anywhere on the paper canvas to drag the pencil bump |
 | **Mouse (Desktop)** | Click and drag the paper bump |
 | **Keyboard** | `Arrow Keys` or `WASD` to move the pencil bump |
 | **Paper Shaker (2-Player Local)** | Side touch strips on screen edges, or `Z` (Left Shake) and `M` (Right Shake) keys |
@@ -76,7 +96,7 @@ do-not-fall-in/
 │
 ├── src/                    # Backend server and worker source code
 │   ├── server.js           # Local Node.js + WebSocket dev server
-│   └── worker.js           # Cloudflare Worker + Durable Object backend
+│   └── worker.js           # Cloudflare Worker + Durable Objects SQLite backend
 │
 ├── wrangler.json           # Cloudflare Wrangler project configuration
 ├── package.json            # Project manifest & npm scripts
@@ -104,13 +124,13 @@ do-not-fall-in/
    ```bash
    npm start
    ```
-   Open your browser at `http://localhost:8420` (or `http://localhost:9000`).
+   Open your browser at `http://localhost:9000` (or `http://localhost:8420`).
 
 ---
 
 ## ☁️ Deployment
 
-Deploy to Cloudflare Workers with Static Assets in a single command:
+Deploy to Cloudflare Workers with Static Assets and Durable Objects SQLite in a single command:
 
 ```bash
 npm run deploy
