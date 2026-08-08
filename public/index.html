@@ -1869,7 +1869,7 @@ const net = {
   role: null,          // 'host' | 'guest'
   pencil: true,        // in a race both players hold a pencil, always
   seed: 0,
-  myName: '',          // typed here; kept in memory only, never stored
+  myName: getPlayerName(),     // auto-populated from saved player name
   peerName: '',        // typed on THEIR phone, so treated as hostile input
   peerTip:   { x: START_X, y: START_Y },   // last position they reported
   peerShown: { x: START_X, y: START_Y },   // eased, so 20 packets/sec is smooth
