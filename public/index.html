@@ -3313,7 +3313,7 @@ function step(now) {
       }
 
       // Continuously apply gravitational suction pull to target (pulls stationary tips!)
-      if (game.mode === '1p') {
+      if (game.state === 'playing') {
         const suction = getHoleSuctionOffset(game.tip.x, game.tip.y, game.level);
         if (suction.dx || suction.dy) {
           const k = dt / 16.6;
