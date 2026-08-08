@@ -13,6 +13,10 @@
       {
         "name": "HUB",
         "class_name": "GameRoomHub"
+      },
+      {
+        "name": "LEADERBOARD",
+        "class_name": "LeaderboardHub"
       }
     ]
   },
@@ -20,6 +24,10 @@
     {
       "tag": "v1",
       "new_sqlite_classes": ["GameRoomHub"]
+    },
+    {
+      "tag": "v2",
+      "new_sqlite_classes": ["LeaderboardHub"]
     }
   ]
 }

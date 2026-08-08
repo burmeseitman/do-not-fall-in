@@ -469,6 +469,30 @@
     color: var(--dim);
   }
   .stat-row .stat-val { color: var(--ink); font-weight: 700; }
+
+  /* ---- Global Leaderboard ------------------------------------------- */
+  .lvl-selector { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 12px; }
+  .lvl-btn {
+    width: 32px; height: 32px;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--dim);
+    background: transparent;
+    border: 1px solid #3A3F4B;
+    border-radius: 3px;
+    cursor: pointer;
+    padding: 0;
+  }
+  .lvl-btn.active { color: #14161B; background: var(--paper); border-color: var(--paper); }
+  .my-row { background: rgba(232, 199, 122, 0.1); border-radius: 3px; }
+  .rank-badge {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: #E8C77A;
+    margin: 4px 0 10px;
+    letter-spacing: 0.04em;
+  }
 </style>
 </head>
 <body>
@@ -629,6 +653,90 @@ function soundVictory() {
 /* ═══════════════════════════════════════════════════════════════════════
    SCOREBOARD — persistent stats via localStorage
    ═══════════════════════════════════════════════════════════════════════ */
+
+const PID_KEY = 'dont_fall_in_pid';
+const NAME_KEY = 'dont_fall_in_name';
+
+function getPlayerId() {
+  let pid = localStorage.getItem(PID_KEY);
+  if (!pid) {
+    const arr = new Uint8Array(4);
+    crypto.getRandomValues(arr);
+    pid = Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('');
+    localStorage.setItem(PID_KEY, pid);
+  }
+  return pid;
+}
+
+function getPlayerName() {
+  return localStorage.getItem(NAME_KEY) || '';
+}
+
+function setPlayerName(name) {
+  localStorage.setItem(NAME_KEY, (name || '').trim().slice(0, 14));
+}
+
+/** Submit score to server. Fire-and-forget, non-blocking. */
+async function submitGlobalScore(level, timeMs) {
+  const name = getPlayerName();
+  if (!name) return;  // no name = don't submit
+  try {
+    const res = await fetch('/api/score', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pid: getPlayerId(), name, level, time: Math.round(timeMs) })
+    });
+    const data = await res.json();
+    if (data.ok) game.globalRank = data.rank;
+  } catch {}
+}
+
+let leaderboardCache = null;
+
+async function fetchLeaderboard() {
+  const el = document.getElementById('stats-body');
+  if (el) el.innerHTML = '<p class="stat">Loading…</p>';
+  try {
+    const res = await fetch('/api/leaderboard');
+    leaderboardCache = await res.json();
+    renderGlobalTab(1);
+  } catch {
+    if (el) el.innerHTML = '<p style="color:#E8746C;font-family:var(--mono);font-size:13px">Failed to load leaderboard.</p>';
+  }
+}
+
+function renderGlobalTab(level) {
+  const el = document.getElementById('stats-body');
+  if (!el || !leaderboardCache) return;
+  const entries = leaderboardCache.levels[String(level)] || [];
+  const pid = getPlayerId();
+
+  let btns = '';
+  for (let i = 1; i <= 12; i++) {
+    btns += `<button class="lvl-btn${i === level ? ' active' : ''}" data-lv="${i}">${i}</button>`;
+  }
+
+  let rows = '';
+  if (entries.length === 0) {
+    rows = '<p style="color:#3A3F4B;font-family:var(--mono);font-size:13px;margin:16px 0">No scores yet. Be the first!</p>';
+  } else {
+    entries.forEach((e, idx) => {
+      const isMe = e.pid === pid;
+      rows += `<div class="level-row${isMe ? ' my-row' : ''}">
+        <span class="lv-num">#${idx + 1}</span>
+        <span class="lv-stars" style="flex:2">${esc(e.n)}${isMe ? ' ★' : ''}</span>
+        <span class="lv-stars">${starsHtml(e.s)}</span>
+        <span class="lv-time">${(e.t / 1000).toFixed(1)}s</span>
+      </div>`;
+    });
+  }
+
+  el.innerHTML = `<div class="lvl-selector">${btns}</div>${rows}`;
+
+  el.querySelectorAll('.lvl-btn').forEach(btn => {
+    btn.onclick = () => { soundClick(); renderGlobalTab(Number(btn.dataset.lv)); };
+  });
+}
 
 const STATS_KEY = 'dont_fall_in_stats';
 
@@ -1392,6 +1500,7 @@ function startRound() {
   game.surface.v = 0;
   game.charges = T.SHAKE_CHARGES;
   game.rechargeT = 0;
+  game.globalRank = null;
   game.state = 'ready';
   const px = startXFor(otherRole(net.role));
   net.peerTip.x = px;   net.peerTip.y = START_Y;
@@ -1632,6 +1741,12 @@ function onFinish() {
     game.isNewBest = !prev || prev.best === null || game.elapsed < prev.best;
     game.earnedStars = getStars(game.level, game.elapsed);
     recordLevelResult(game.level, game.elapsed, true);
+    submitGlobalScore(game.level, game.elapsed).then(() => {
+      const badge = document.getElementById('rank-badge-text');
+      if (badge && game.globalRank) {
+        badge.textContent = `🌍 Rank #${game.globalRank} worldwide!`;
+      }
+    });
   }
   if (isDuel()) return endRound(true);
   if (game.level >= T.LEVELS) {
@@ -2199,7 +2314,10 @@ function showScreen(kind) {
       <h1 id="card-title">Don't<br>Fall In</h1>
       <p>Guide a pencil through a paper full of holes.
          Drag the bump from bottom to top without falling in!</p>
-      <p>If you touch a hole, you fall through and lose.</p>
+      <input class="code-in name-in" id="global-name-in" maxlength="14"
+             autocomplete="off" autocapitalize="words" spellcheck="false"
+             placeholder="Your name (for Leaderboard)" aria-label="Your name"
+             value="${esc(getPlayerName() || net.myName)}">
       <div class="rule"></div>
       <button id="btn-primary">One player</button>
       <button id="btn-secondary" class="ghost">Two players, one phone</button>
@@ -2362,6 +2480,7 @@ function showScreen(kind) {
       <p class="tight">Level ${game.level} of ${T.LEVELS} done.</p>
       <div class="stars-display">${starsHtml(earnedStars)}</div>
       <p class="stat">${fmt(game.elapsed)}s${isNewBest ? ' · <span class="new-best">🏆 New Best!</span>' : ''}</p>
+      <p id="rank-badge-text" class="rank-badge">${game.globalRank ? '🌍 Rank #' + game.globalRank + ' worldwide!' : ''}</p>
       <p>Next level has more holes, packed tighter!</p>
       <button id="btn-primary">Next level</button>`;
   } else if (kind === 'won') {
@@ -2383,6 +2502,7 @@ function showScreen(kind) {
         <button class="tab active" data-tab="sp">Single</button>
         <button class="tab" data-tab="dp">2P Local</button>
         <button class="tab" data-tab="net">Online</button>
+        <button class="tab" data-tab="global">🌐 Global</button>
       </div>
       <div id="stats-body">${buildStatsTab('sp')}</div>
       <div class="rule"></div>
@@ -2445,7 +2565,11 @@ function showScreen(kind) {
         soundClick();
         card.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         btn.classList.add('active');
-        document.getElementById('stats-body').innerHTML = buildStatsTab(btn.dataset.tab);
+        if (btn.dataset.tab === 'global') {
+          fetchLeaderboard();
+        } else {
+          document.getElementById('stats-body').innerHTML = buildStatsTab(btn.dataset.tab);
+        }
       };
     });
     const resetBtn = card.querySelector('#btn-reset');
@@ -2459,9 +2583,22 @@ function showScreen(kind) {
   }
 
   // Kept live so the name survives moving between the menu and the code entry.
+  const globalNameIn = card.querySelector('#global-name-in');
+  if (globalNameIn) {
+    globalNameIn.addEventListener('input', () => {
+      const val = globalNameIn.value;
+      setPlayerName(val);
+      net.myName = cleanName(val);
+    });
+  }
+
   const nameIn = card.querySelector('#name-in');
   if (nameIn) {
-    nameIn.addEventListener('input', () => { net.myName = cleanName(nameIn.value); });
+    nameIn.addEventListener('input', () => {
+      const val = nameIn.value;
+      net.myName = cleanName(val);
+      setPlayerName(val);
+    });
   }
 
   const codeIn = card.querySelector('#code-in');

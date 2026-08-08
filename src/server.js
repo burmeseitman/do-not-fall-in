@@ -64,6 +64,57 @@ const PUBLIC = new Map([
   ['/manifest.json', 'manifest.json'],
 ]);
 
+/* ── Mock Leaderboard (in-memory, resets on restart) ──────────────────── */
+const mockScores = {};  // { '1': [ { pid, name, time, stars, date } ], ... }
+
+function mockGetStars(level, timeMs) {
+  const base = 5000 + level * 1500;
+  if (timeMs <= base) return 3;
+  if (timeMs <= base * 2) return 2;
+  return 1;
+}
+
+function handleApiScore(body) {
+  const { pid, name, level, time } = body;
+  if (!pid || typeof pid !== 'string') return { ok: false, error: 'Invalid pid' };
+  if (!name || typeof name !== 'string' || name.trim().length === 0) return { ok: false, error: 'Invalid name' };
+  if (!Number.isInteger(level) || level < 1 || level > 12) return { ok: false, error: 'Invalid level' };
+  if (typeof time !== 'number' || time < 1500 || time > 600000) return { ok: false, error: 'Invalid time' };
+
+  const key = String(level);
+  if (!mockScores[key]) mockScores[key] = [];
+  const arr = mockScores[key];
+  const stars = mockGetStars(level, time);
+  const date = new Date().toISOString().slice(0, 10);
+  const cleanName = name.trim().slice(0, 14);
+
+  const idx = arr.findIndex(e => e.pid === pid);
+  if (idx >= 0) {
+    if (time < arr[idx].time) {
+      arr[idx] = { pid, name: cleanName, time, stars: Math.max(arr[idx].stars, stars), date };
+    } else {
+      arr[idx].name = cleanName;
+      arr[idx].stars = Math.max(arr[idx].stars, stars);
+    }
+  } else {
+    arr.push({ pid, name: cleanName, time, stars, date });
+  }
+  arr.sort((a, b) => a.time - b.time);
+  if (arr.length > 20) arr.length = 20;
+
+  const rank = arr.findIndex(e => e.pid === pid) + 1;
+  return { ok: true, rank: rank || arr.length };
+}
+
+function handleApiLeaderboard() {
+  const levels = {};
+  for (let i = 1; i <= 12; i++) {
+    const arr = mockScores[String(i)] || [];
+    levels[String(i)] = arr.map(r => ({ pid: r.pid, n: r.name, t: r.time, s: r.stars, d: r.date }));
+  }
+  return { levels };
+}
+
 const SECURITY_HEADERS = {
   // The game's only script is inline, so 'unsafe-inline' is unavoidable
   // without a build step; everything else is locked down. Google Fonts is the
@@ -86,12 +137,35 @@ const SECURITY_HEADERS = {
 };
 
 const httpServer = http.createServer((req, res) => {
-  if (req.method !== 'GET' && req.method !== 'HEAD') {
-    res.writeHead(405, { Allow: 'GET, HEAD', ...SECURITY_HEADERS }).end();
+  const rel = (req.url || '/').split('?')[0].split('#')[0];
+
+  // --- Leaderboard API ---
+  if (rel === '/api/score' && req.method === 'POST') {
+    let body = '';
+    req.on('data', c => { body += c; if (body.length > 8192) req.destroy(); });
+    req.on('end', () => {
+      try {
+        const result = handleApiScore(JSON.parse(body));
+        res.writeHead(result.ok ? 200 : 400, { 'Content-Type': 'application/json', ...SECURITY_HEADERS });
+        res.end(JSON.stringify(result));
+      } catch {
+        res.writeHead(400, { 'Content-Type': 'application/json', ...SECURITY_HEADERS });
+        res.end(JSON.stringify({ ok: false, error: 'Bad request' }));
+      }
+    });
+    return;
+  }
+  if (rel === '/api/leaderboard' && req.method === 'GET') {
+    res.writeHead(200, { 'Content-Type': 'application/json', ...SECURITY_HEADERS });
+    res.end(JSON.stringify(handleApiLeaderboard()));
     return;
   }
 
-  const rel = (req.url || '/').split('?')[0].split('#')[0];
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    res.writeHead(405, { Allow: 'GET, HEAD, POST', ...SECURITY_HEADERS }).end();
+    return;
+  }
+
   const name = PUBLIC.get(rel);
   if (!name) {
     res.writeHead(404, { 'Content-Type': 'text/plain', ...SECURITY_HEADERS }).end('Not found');
