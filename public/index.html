@@ -508,6 +508,35 @@
     margin: 4px 0 10px;
     letter-spacing: 0.04em;
   }
+
+  /* ---- Pencil Skins ------------------------------------------------ */
+  .skins-grid { display: flex; flex-direction: column; gap: 8px; margin: 0 0 16px; text-align: left; }
+  .skin-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    background: rgba(20, 22, 28, 0.4);
+    border: 1px solid #3A3F4B;
+    border-radius: 4px;
+    font-family: var(--mono);
+  }
+  .skin-card.active { border-color: #E8C77A; background: rgba(232, 199, 122, 0.08); }
+  .skin-card.locked { opacity: 0.55; }
+  .skin-icon { font-size: 22px; width: 28px; text-align: center; }
+  .skin-info { flex: 1; }
+  .skin-name { font-size: 13px; font-weight: 700; color: var(--paper); }
+  .skin-req { font-size: 11px; color: var(--dim); margin-top: 2px; }
+  .skin-badge { font-size: 10px; font-weight: 700; color: #E8C77A; letter-spacing: 0.08em; }
+  .card .skin-card button.skin-equip-btn {
+    padding: 6px 12px !important;
+    margin: 0 !important;
+    width: auto !important;
+    font-size: 11px !important;
+    background: var(--paper) !important;
+    color: #14161B !important;
+    border: none !important;
+  }
 </style>
 </head>
 <body>
@@ -666,8 +695,39 @@ function soundVictory() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   SCOREBOARD — persistent stats via localStorage
+   SCOREBOARD & SKINS — persistent stats & unlockable skins
    ═══════════════════════════════════════════════════════════════════════ */
+
+const SKINS = [
+  { id: 'classic',  name: 'Classic Lead',   stars: 0,  dot: '#3B3F48', halo: 'rgba(59,63,72,0.22)',   badge: '✏️' },
+  { id: 'ruby',     name: 'Crimson Ruby',   stars: 6,  dot: '#E84A5F', halo: 'rgba(232,74,95,0.30)',  badge: '🔴' },
+  { id: 'electric', name: 'Electric Neon',  stars: 15, dot: '#00F5D4', halo: 'rgba(0,245,212,0.35)',  badge: '⚡' },
+  { id: 'gold',     name: 'Golden Master',  stars: 27, dot: '#FFD700', halo: 'rgba(255,215,0,0.40)',  badge: '🌟' },
+  { id: 'rainbow',  name: 'Rainbow Cycle',  stars: 36, dot: 'rainbow', halo: 'rainbow',               badge: '🌈' },
+];
+
+function getTotalStars() {
+  let total = 0;
+  if (stats && stats.sp && stats.sp.levels) {
+    for (let i = 1; i <= T.LEVELS; i++) {
+      const l = stats.sp.levels[String(i)];
+      if (l && l.stars) total += l.stars;
+    }
+  }
+  return total;
+}
+
+function getEquippedSkin() {
+  const savedId = localStorage.getItem('dont_fall_in_skin') || 'classic';
+  const skin = SKINS.find(s => s.id === savedId) || SKINS[0];
+  const totalStars = getTotalStars();
+  if (skin.stars > totalStars) return SKINS[0];
+  return skin;
+}
+
+function equipSkin(skinId) {
+  localStorage.setItem('dont_fall_in_skin', skinId);
+}
 
 const PID_KEY = 'dont_fall_in_pid';
 const NAME_KEY = 'dont_fall_in_name';
@@ -2396,7 +2456,10 @@ function showScreen(kind) {
       <button id="btn-primary">One player</button>
       <button id="btn-secondary" class="ghost">Two players, one phone</button>
       <button id="btn-third" class="ghost"${canGoOnline ? '' : ' disabled'}>Two phones</button>
-      <button id="btn-stats" class="ghost">📊 Scoreboard</button>
+      <div style="display:flex;gap:6px;margin-top:10px;">
+        <button id="btn-stats" class="ghost" style="flex:1;margin-top:0">📊 Scoreboard</button>
+        <button id="btn-skins" class="ghost" style="flex:1;margin-top:0">🎨 Skins</button>
+      </div>
       <p class="hint">${canGoOnline
         ? 'Tap and drag the bump. You can also use arrow keys.'
         : 'To play on two phones, run <strong>node server.js</strong> on your computer and open the link it shows.'}</p>`;
@@ -2586,6 +2649,30 @@ function showScreen(kind) {
       <div class="rule"></div>
       <button id="btn-reset" class="ghost" style="font-size:12px;padding:10px">🔄 Reset All Stats</button>
       <button id="btn-secondary" class="ghost">← Back</button>`;
+  } else if (kind === 'skins') {
+    const totalStars = getTotalStars();
+    const equipped = getEquippedSkin();
+    let skinListHtml = '';
+    SKINS.forEach(s => {
+      const isUnlocked = totalStars >= s.stars;
+      const isEquipped = equipped.id === s.id;
+      skinListHtml += `
+        <div class="skin-card${isEquipped ? ' active' : ''}${!isUnlocked ? ' locked' : ''}">
+          <div class="skin-icon">${s.badge}</div>
+          <div class="skin-info">
+            <div class="skin-name">${esc(s.name)}</div>
+            <div class="skin-req">${s.stars === 0 ? 'Default' : '⭐ Requires ' + s.stars + ' stars'}</div>
+          </div>
+          ${isEquipped ? '<span class="skin-badge">EQUIPPED</span>' : (isUnlocked ? `<button class="skin-equip-btn" data-skin="${s.id}">EQUIP</button>` : '🔒')}
+        </div>`;
+    });
+
+    html = `
+      <h2 id="card-title">🎨 Pencil Skins</h2>
+      <p class="stat">⭐ ${totalStars} / ${T.LEVELS * 3} Total Stars Earned</p>
+      <div class="skins-grid">${skinListHtml}</div>
+      <div class="rule"></div>
+      <button id="btn-secondary" class="ghost">← Back</button>`;
   }
 
   card.innerHTML = html;
@@ -2635,6 +2722,21 @@ function showScreen(kind) {
   // Stats & scoreboard button
   const statsBtn = card.querySelector('#btn-stats');
   if (statsBtn) statsBtn.onclick = () => { soundClick(); showScreen('stats'); };
+
+  // Pencil skins button
+  const skinsBtn = card.querySelector('#btn-skins');
+  if (skinsBtn) skinsBtn.onclick = () => { soundClick(); showScreen('skins'); };
+
+  // Skins screen equip handlers
+  if (kind === 'skins') {
+    card.querySelectorAll('.skin-equip-btn').forEach(btn => {
+      btn.onclick = () => {
+        soundClick();
+        equipSkin(btn.dataset.skin);
+        showScreen('skins');
+      };
+    });
+  }
 
   // Stats screen: tab switching & reset
   if (kind === 'stats') {
@@ -2776,7 +2878,24 @@ function drawBump(x, y, col) {
   // The tip itself — lead pressed against the underside of the sheet. Small,
   // but the one thing on screen a player can aim with, so in a race it carries
   // the identity: same colour for the same player on both phones.
-  const ink = col || PLAYER.host;
+  let ink = col || PLAYER.host;
+  const equipped = getEquippedSkin();
+
+  if (!col) {
+    if (equipped.id === 'rainbow') {
+      const hue = (performance.now() * 0.15) % 360;
+      ink = {
+        dot: `hsl(${hue}, 100%, 60%)`,
+        halo: `hsla(${hue}, 100%, 60%, 0.40)`
+      };
+    } else if (equipped.id !== 'classic') {
+      ink = {
+        dot: equipped.dot,
+        halo: equipped.halo
+      };
+    }
+  }
+
   ctx.fillStyle = ink.halo;
   ctx.beginPath();
   ctx.arc(x, y, 4.4, 0, Math.PI * 2);
