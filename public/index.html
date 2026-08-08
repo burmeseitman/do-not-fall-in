@@ -2213,7 +2213,127 @@ window.addEventListener('keyup', (e) => {
 /* ── Shake strips ──────────────────────────────────────────────────────
    Real buttons, so they are focusable and announce themselves. They are DOM
    rather than canvas because they are UI pinned to the screen, not part of
-   the sheet — and because a 56px thumb target  } else if (kind === 'netmenu') {
+   the sheet — and because a 56px thumb target should not have to be
+   hit-tested by hand.
+   ─────────────────────────────────────────────────────────────────────── */
+
+const stripsEl = document.getElementById('strips');
+const stripL = document.getElementById('strip-l');
+const stripR = document.getElementById('strip-r');
+const pipsL = document.getElementById('pips-l');
+const pipsR = document.getElementById('pips-r');
+
+for (const box of [pipsL, pipsR]) {
+  for (let i = 0; i < T.SHAKE_CHARGES; i++) {
+    const d = document.createElement('span');
+    d.className = 'pip';
+    box.appendChild(d);
+  }
+}
+
+function updatePips() {
+  for (const box of [pipsL, pipsR]) {
+    const kids = box.children;
+    for (let i = 0; i < kids.length; i++) kids[i].classList.toggle('on', i < game.charges);
+  }
+  const empty = game.charges < 1;
+  stripL.classList.toggle('empty', empty);
+  stripR.classList.toggle('empty', empty);
+}
+
+function pressStrip(el, dir) {
+  if (!shakeSheet(dir)) return;
+  el.classList.add('flash');
+  setTimeout(() => el.classList.remove('flash'), 110);
+}
+
+for (const [el, dir] of [[stripL, -1], [stripR, +1]]) {
+  el.addEventListener('touchstart', (e) => { pressStrip(el, dir); e.preventDefault(); }, { passive: false });
+  el.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'touch') return;
+    pressStrip(el, dir);
+    e.preventDefault();
+  }, { passive: false });
+  // Keyboard activation of the focused button, without double-firing on tap.
+  el.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { pressStrip(el, dir); e.preventDefault(); }
+  });
+}
+
+function setStripsVisible(on) {
+  stripsEl.hidden = !on;
+  if (on) layoutStrips();
+}
+
+/** Strips span from the screen edge to the inner edge of the un-punched
+ *  margin, so they line up with the paper however the field is letterboxed. */
+function layoutStrips() {
+  const hit  = view.ox + T.SHAKE_STRIP * view.scale;
+  const band = view.ox + (T.SHAKE_STRIP - T.BUMP_RADIUS) * view.scale;
+  for (const el of [stripL, stripR]) {
+    el.style.width = hit + 'px';
+    el.style.setProperty('--band', band + 'px');
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SCREENS
+   ═══════════════════════════════════════════════════════════════════════ */
+
+const screens = document.getElementById('screens');
+const card = document.getElementById('card');
+const hud = document.getElementById('hud');
+const hudSheet = document.getElementById('hud-sheet');
+const hudTime = document.getElementById('hud-time');
+
+function fmt(t) { return (t / 1000).toFixed(1); }
+
+/**
+ * Cards are assembled as HTML strings, so anything that did not come from this
+ * file has to be escaped on the way in. The room code and the status line both
+ * originate at the server, and a server is exactly the thing you should not
+ * assume is friendly just because you started it.
+ */
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+/** Which card is up, so a late-arriving name can repaint it in place. */
+let currentScreen = null;
+
+function showScreen(kind) {
+  currentScreen = kind || null;
+  if (!kind) {
+    screens.hidden = true;
+    hud.classList.remove('hidden');
+    return;
+  }
+  screens.hidden = false;
+  hud.classList.add('hidden');
+
+  const pct = Math.round(game.best * 100);
+  let html = '';
+
+  if (kind === 'title') {
+    html = `
+      <h1 id="card-title">Don't<br>Fall In</h1>
+      <p>Guide a pencil through a paper full of holes.
+         Drag the bump from bottom to top without falling in!</p>
+      <input class="code-in name-in" id="global-name-in" maxlength="14"
+             autocomplete="off" autocapitalize="words" spellcheck="false"
+             placeholder="Your name (for Leaderboard)" aria-label="Your name"
+             value="${esc(getPlayerName() || net.myName)}">
+      <div class="rule"></div>
+      <button id="btn-primary">One player</button>
+      <button id="btn-secondary" class="ghost">Two players, one phone</button>
+      <button id="btn-third" class="ghost"${canGoOnline ? '' : ' disabled'}>Two phones</button>
+      <button id="btn-stats" class="ghost">📊 Scoreboard</button>
+      <p class="hint">${canGoOnline
+        ? 'Tap and drag the bump. You can also use arrow keys.'
+        : 'To play on two phones, run <strong>node server.js</strong> on your computer and open the link it shows.'}</p>`;
+
+  } else if (kind === 'netmenu') {
     html = `
       <h2 id="card-title">Two phones</h2>
       <p>Race! Both players get a pencil on the same sheet.</p>
