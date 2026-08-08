@@ -295,9 +295,21 @@ export default {
       return lb.fetch(request);
     }
 
-    // Serve static assets
+    // Serve static assets with strict no-cache headers for HTML
     if (env.ASSETS) {
-      return env.ASSETS.fetch(request);
+      const res = await env.ASSETS.fetch(request);
+      if (url.pathname === '/' || url.pathname.endsWith('.html') || url.pathname === '') {
+        const newHeaders = new Headers(res.headers);
+        newHeaders.set('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+        newHeaders.set('Pragma', 'no-cache');
+        newHeaders.set('Expires', '0');
+        return new Response(res.body, {
+          status: res.status,
+          statusText: res.statusText,
+          headers: newHeaders
+        });
+      }
+      return res;
     }
 
     return new Response('Not found', { status: 404 });
