@@ -3012,10 +3012,9 @@ function render() {
     PAPER.w + paperLayer.pad * 2, PAPER.h + paperLayer.pad * 2
   );
 
-  // Printed surface: rule lines and holes, clipped to the sheet. This is what
-  // the holder shakes; PRINT_MARGIN is what keeps a gap from opening at the
-  // edge when it slides.
   const surfaceX = game.surface.x;
+
+  // 1. Printed surface: rule lines and static paper layer
   ctx.save();
   ctx.beginPath();
   ctx.rect(PAPER.x, PAPER.y, PAPER.w, PAPER.h);
@@ -3027,22 +3026,7 @@ function render() {
   );
   ctx.restore();
 
-  // Live rendering of oscillating holes (Level 9+)
-  if (game.level >= 9 && game.sheet && game.sheet.holes) {
-    const timeSec = performance.now() * 0.001;
-    ctx.save();
-    ctx.translate(surfaceX, 0);
-    for (let i = 0; i < game.sheet.holes.length; i++) {
-      const h = game.sheet.holes[i];
-      if (h.amp > 0) {
-        const hx = getHoleX(h, timeSec);
-        drawHole(ctx, h, hx);
-      }
-    }
-    ctx.restore();
-  }
-
-  // Visual suction danger zone aura for active suction holes (Level 2+) — Idea 2: 3D Paper Funnel Shadow
+  // 2. Visual suction danger zone aura & 3D Paper Funnel Shadows (rendered around hole rim)
   if (game.level >= 2 && game.sheet && game.sheet.holes) {
     const levelFactor = Math.min(1, game.level / 12);
     const pullDist = 18 + levelFactor * 36;
@@ -3058,10 +3042,10 @@ function render() {
 
       const auraR = h.r + pullDist;
 
-      // 1. Soft 3D Paper Indentation Shadow (makes the hole look like a physical sunken pit/funnel)
-      const sg = ctx.createRadialGradient(hx + 1.8, hy + 2.4, h.r * 0.8, hx + 1.2, hy + 1.8, auraR);
-      sg.addColorStop(0.00, `rgba(32, 24, 16, ${0.42 + levelFactor * 0.20})`); // Sunken rim shadow
-      sg.addColorStop(0.48, `rgba(75, 58, 38, ${0.18 + levelFactor * 0.12})`); // Soft paper crease gradient
+      // Soft 3D Paper Indentation Shadow around hole rim
+      const sg = ctx.createRadialGradient(hx + 1.8, hy + 2.4, h.r, hx + 1.2, hy + 1.8, auraR);
+      sg.addColorStop(0.00, `rgba(32, 24, 16, ${0.40 + levelFactor * 0.20})`); // Sunken rim shadow
+      sg.addColorStop(0.50, `rgba(75, 58, 38, ${0.16 + levelFactor * 0.10})`); // Soft paper crease gradient
       sg.addColorStop(1.00, 'rgba(110, 90, 65, 0)');                         // Fades out into paper
 
       ctx.fillStyle = sg;
@@ -3069,13 +3053,25 @@ function render() {
       ctx.arc(hx, hy, auraR, 0, Math.PI * 2);
       ctx.fill();
 
-      // 2. Subtle Outer Pencil Crease Ring
+      // Subtle Outer Pencil Crease Ring
       ctx.lineWidth = 1.1;
       ctx.setLineDash([4, 4]);
       ctx.strokeStyle = `rgba(75, 58, 38, ${(0.32 + levelFactor * 0.20).toFixed(2)})`;
       ctx.beginPath();
       ctx.arc(hx, hy, auraR, 0, Math.PI * 2);
       ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // 3. Crisp Hole Rendering: render all holes on top so torn paper lips & black voids remain 100% sharp & crystal clear
+  if (game.sheet && game.sheet.holes) {
+    const timeSec = performance.now() * 0.001;
+    ctx.save();
+    for (let i = 0; i < game.sheet.holes.length; i++) {
+      const h = game.sheet.holes[i];
+      const hx = getHoleX(h, timeSec) + surfaceX;
+      drawHole(ctx, h, hx);
     }
     ctx.restore();
   }
