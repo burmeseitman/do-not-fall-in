@@ -125,7 +125,7 @@
     --void:     #0B0C0F;
     --card:     #1F222A;
     --ink:      #E4DECB;
-    --dim:      #8D8B84;
+    --dim:      #CBD5E1;
     --display:  'Bevan', Georgia, 'Times New Roman', serif;
     --mono:     'Courier Prime', 'Courier New', Courier, monospace;
   }
@@ -481,26 +481,75 @@
     border-bottom: 1px solid #2C303A;
     font-family: var(--mono);
     font-size: 13px;
-    color: var(--dim);
+    color: #CBD5E1;
   }
-  .stat-row .stat-val { color: var(--ink); font-weight: 700; }
+  .stat-row .stat-val { color: #38BDF8; font-weight: 700; }
 
-  /* ---- Global Leaderboard ------------------------------------------- */
-  .lvl-selector { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 12px; }
+  .lvl-selector { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; align-items: center; margin: 0 auto 12px; }
   .lvl-btn {
-    width: 32px; height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    width: 34px; height: 34px;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    color: #E2E8F0;
+    background: #242936;
+    border: 1px solid #475569;
+    border-radius: 4px;
+    cursor: pointer;
+    padding: 0;
+    text-align: center;
+    transition: all 0.15s ease;
+  }
+  .lvl-btn.active { color: #0F172A; background: #38BDF8; border-color: #38BDF8; box-shadow: 0 0 8px rgba(56, 189, 248, 0.4); }
+
+  .my-rank-spotlight {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.22), rgba(217, 119, 6, 0.12));
+    border: 1px solid rgba(245, 158, 11, 0.5);
+    border-radius: 6px;
+    margin: 0 0 10px;
     font-family: var(--mono);
     font-size: 12px;
     font-weight: 700;
-    color: var(--dim);
-    background: transparent;
-    border: 1px solid #3A3F4B;
-    border-radius: 3px;
-    cursor: pointer;
-    padding: 0;
+    color: #FBBF24;
   }
-  .lvl-btn.active { color: #14161B; background: var(--paper); border-color: var(--paper); }
-  .my-row { background: rgba(232, 199, 122, 0.1); border-radius: 3px; }
+
+  .lb-scroll-container {
+    max-height: 230px;
+    overflow-y: auto;
+    border: 1px solid #2D3342;
+    border-radius: 6px;
+    background: #141720;
+    padding: 4px;
+  }
+  .lb-scroll-container::-webkit-scrollbar { width: 6px; }
+  .lb-scroll-container::-webkit-scrollbar-track { background: #1A1D27; border-radius: 3px; }
+  .lb-scroll-container::-webkit-scrollbar-thumb { background: #38BDF8; border-radius: 3px; }
+
+  .level-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 10px;
+    font-family: var(--mono);
+    font-size: 13px;
+    border-bottom: 1px solid #222633;
+  }
+  .level-row:nth-child(even) { background: rgba(255, 255, 255, 0.02); }
+  .level-row:last-child { border-bottom: none; }
+  .my-row { background: rgba(245, 158, 11, 0.18) !important; border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 4px; }
+
+  .podium-1 { background: linear-gradient(90deg, rgba(245, 158, 11, 0.15), transparent) !important; }
+  .podium-2 { background: linear-gradient(90deg, rgba(226, 232, 240, 0.10), transparent) !important; }
+  .podium-3 { background: linear-gradient(90deg, rgba(217, 119, 6, 0.12), transparent) !important; }
+
   .rank-badge {
     font-family: var(--mono);
     font-size: 13px;
@@ -830,22 +879,48 @@ function renderGlobalTab(level) {
     btns += `<button class="lvl-btn${i === level ? ' active' : ''}" data-lv="${i}">${i}</button>`;
   }
 
+  // Find player's rank in this level
+  let myEntry = null;
+  let myIdx = -1;
+  entries.forEach((e, idx) => {
+    if (e.pid === pid) { myEntry = e; myIdx = idx; }
+  });
+
+  let spotlight = '';
+  if (myEntry) {
+    spotlight = `<div class="my-rank-spotlight">
+      <span>🌟 YOUR RANK: #${myIdx + 1}</span>
+      <span>${starsHtml(myEntry.s)} ${(myEntry.t / 1000).toFixed(1)}s</span>
+    </div>`;
+  }
+
   let rows = '';
   if (entries.length === 0) {
-    rows = '<p style="color:#3A3F4B;font-family:var(--mono);font-size:13px;margin:16px 0">No scores yet. Be the first!</p>';
+    rows = '<p style="color:#94A3B8;font-family:var(--mono);font-size:13px;margin:16px 0;font-weight:500;text-align:center">No scores yet for Level ' + level + '. Be the first!</p>';
   } else {
     entries.forEach((e, idx) => {
       const isMe = e.pid === pid;
-      rows += `<div class="level-row${isMe ? ' my-row' : ''}">
-        <span class="lv-num">#${idx + 1}</span>
-        <span class="lv-stars" style="flex:2">${esc(e.n)}${isMe ? ' ★' : ''}</span>
+      let badge = `#${idx + 1}`;
+      let rankColor = '#38BDF8';
+      let rowClass = isMe ? ' my-row' : '';
+
+      if (idx === 0) { badge = '🥇 #1'; rankColor = '#F59E0B'; rowClass += ' podium-1'; }
+      else if (idx === 1) { badge = '🥈 #2'; rankColor = '#E2E8F0'; rowClass += ' podium-2'; }
+      else if (idx === 2) { badge = '🥉 #3'; rankColor = '#D97706'; rowClass += ' podium-3'; }
+
+      rows += `<div class="level-row${rowClass}">
+        <span class="lv-num" style="color:${rankColor};font-weight:800;min-width:44px">${badge}</span>
+        <span class="lv-stars" style="flex:2;color:#F8FAFC;font-weight:600">${esc(e.n)}${isMe ? ' <span style="color:#F59E0B">★ (YOU)</span>' : ''}</span>
         <span class="lv-stars">${starsHtml(e.s)}</span>
-        <span class="lv-time">${(e.t / 1000).toFixed(1)}s</span>
+        <span class="lv-time" style="color:#60A5FA;font-weight:700">${(e.t / 1000).toFixed(1)}s</span>
       </div>`;
     });
+    rows = `<div class="lb-scroll-container">${rows}</div>`;
   }
 
-  el.innerHTML = `<div class="lvl-selector">${btns}</div>${rows}`;
+  const headerLabel = '<div style="font-family:var(--mono);font-size:11px;font-weight:700;color:#94A3B8;letter-spacing:0.06em;margin:0 0 6px;text-align:center">🎯 SELECT LEVEL TO VIEW RANKINGS</div>';
+
+  el.innerHTML = `${headerLabel}<div class="lvl-selector">${btns}</div>${spotlight}${rows}`;
 
   el.querySelectorAll('.lvl-btn').forEach(btn => {
     btn.onclick = () => { soundClick(); renderGlobalTab(Number(btn.dataset.lv)); };
@@ -950,16 +1025,16 @@ function buildStatsTab(tab) {
       if (l && l.clears > 0) {
         totalStars += l.stars;
         rows += `<div class="level-row">
-          <span class="lv-num">Lv${i}</span>
+          <span class="lv-num" style="color:#F8FAFC;font-weight:700">Lv${i}</span>
           <span class="lv-stars">${starsHtml(l.stars)}</span>
-          <span class="lv-time">${(l.best / 1000).toFixed(1)}s</span>
+          <span class="lv-time" style="color:#38BDF8;font-weight:700">${(l.best / 1000).toFixed(1)}s <small style="color:#F59E0B;font-size:11px;font-family:var(--mono);font-weight:700;margin-left:4px">(${l.attempts} ${l.attempts === 1 ? 'try' : 'tries'})</small></span>
         </div>`;
       } else {
         const attempts = l ? l.attempts : 0;
         rows += `<div class="level-row">
-          <span class="lv-num">Lv${i}</span>
+          <span class="lv-num" style="color:#94A3B8">Lv${i}</span>
           <span class="lv-stars">${starsHtml(0)}</span>
-          <span class="lv-time" style="color:#3A3F4B">${attempts > 0 ? attempts + ' tries' : '—'}</span>
+          <span class="lv-time" style="color:${attempts > 0 ? '#F87171' : '#64748B'};font-weight:600">${attempts > 0 ? attempts + (attempts === 1 ? ' try' : ' tries') : '—'}</span>
         </div>`;
       }
     }
@@ -970,7 +1045,7 @@ function buildStatsTab(tab) {
   } else if (tab === 'dp') {
     const d = stats.dp;
     const total = d.p1Wins + d.p2Wins + d.draws;
-    if (total === 0) return '<p style="color:#3A3F4B;font-family:var(--mono);font-size:13px;margin:16px 0">No duels played yet.</p>';
+    if (total === 0) return '<p style="color:#94A3B8;font-family:var(--mono);font-size:13px;margin:16px 0;font-weight:500">No duels played yet.</p>';
     const p1Pct = Math.round(d.p1Wins / total * 100);
     const p2Pct = Math.round(d.p2Wins / total * 100);
     const drPct = 100 - p1Pct - p2Pct;
@@ -986,12 +1061,12 @@ function buildStatsTab(tab) {
       <div class="stat-row"><span>Draws</span><span class="stat-val">${d.draws}</span></div>`;
   } else {
     const n = stats.net;
-    if (n.played === 0) return '<p style="color:#3A3F4B;font-family:var(--mono);font-size:13px;margin:16px 0">No online races yet.</p>';
+    if (n.played === 0) return '<p style="color:#94A3B8;font-family:var(--mono);font-size:13px;margin:16px 0;font-weight:500">No online races yet.</p>';
     return `
       <div class="stat-row"><span>Races Played</span><span class="stat-val">${n.played}</span></div>
-      <div class="stat-row"><span>Wins</span><span class="stat-val">${n.wins}</span></div>
-      <div class="stat-row"><span>Losses</span><span class="stat-val">${n.losses}</span></div>
-      <div class="stat-row"><span>Win Rate</span><span class="stat-val">${Math.round(n.wins / n.played * 100)}%</span></div>`;
+      <div class="stat-row"><span>Wins</span><span class="stat-val" style="color:#34D399">${n.wins}</span></div>
+      <div class="stat-row"><span>Losses</span><span class="stat-val" style="color:#F87171">${n.losses}</span></div>
+      <div class="stat-row"><span>Win Rate</span><span class="stat-val" style="color:#F59E0B">${Math.round(n.wins / n.played * 100)}%</span></div>`;
   }
 }
 
