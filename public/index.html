@@ -485,51 +485,72 @@
   }
   .stat-row .stat-val { color: #38BDF8; font-weight: 700; }
 
-  .lvl-selector { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; align-items: center; margin: 0 auto 12px; }
+  .lvl-selector {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 4px;
+    width: 100%;
+    max-width: 100%;
+    margin: 0 0 10px;
+    box-sizing: border-box;
+  }
   .lvl-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    line-height: 1;
-    width: 34px; height: 34px;
-    font-family: var(--mono);
-    font-size: 13px;
-    font-weight: 700;
-    color: #E2E8F0;
-    background: #242936;
-    border: 1px solid #475569;
+    display: grid !important;
+    place-items: center !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 32px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: var(--paper);
+    border: 1px solid #3A3F4B;
     border-radius: 4px;
     cursor: pointer;
-    padding: 0;
     text-align: center;
     transition: all 0.15s ease;
+    -webkit-appearance: none;
+    appearance: none;
   }
-  .lvl-btn.active { color: #0F172A; background: #38BDF8; border-color: #38BDF8; box-shadow: 0 0 8px rgba(56, 189, 248, 0.4); }
+  .lvl-btn span {
+    display: block !important;
+    font-family: var(--mono) !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    line-height: 1 !important;
+    color: #14161B !important;
+    text-align: center !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    transform: translateY(-2.5px) !important;
+  }
+  .lvl-btn.active { background: #38BDF8; border-color: #38BDF8; box-shadow: 0 0 8px rgba(56, 189, 248, 0.4); }
+  .lvl-btn.active span { color: #0F172A !important; }
 
   .my-rank-spotlight {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 12px;
+    padding: 5px 10px;
     background: linear-gradient(135deg, rgba(245, 158, 11, 0.22), rgba(217, 119, 6, 0.12));
     border: 1px solid rgba(245, 158, 11, 0.5);
-    border-radius: 6px;
-    margin: 0 0 10px;
+    border-radius: 5px;
+    margin: 0 0 8px;
     font-family: var(--mono);
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 700;
     color: #FBBF24;
   }
 
   .lb-scroll-container {
-    max-height: 230px;
+    max-height: 170px;
     overflow-y: auto;
     border: 1px solid #2D3342;
     border-radius: 6px;
     background: #141720;
-    padding: 4px;
+    padding: 2px 4px;
   }
-  .lb-scroll-container::-webkit-scrollbar { width: 6px; }
+  .lb-scroll-container::-webkit-scrollbar { width: 5px; }
   .lb-scroll-container::-webkit-scrollbar-track { background: #1A1D27; border-radius: 3px; }
   .lb-scroll-container::-webkit-scrollbar-thumb { background: #38BDF8; border-radius: 3px; }
 
@@ -537,9 +558,9 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 7px 10px;
+    padding: 4px 8px;
     font-family: var(--mono);
-    font-size: 13px;
+    font-size: 12px;
     border-bottom: 1px solid #222633;
   }
   .level-row:nth-child(even) { background: rgba(255, 255, 255, 0.02); }
@@ -549,6 +570,12 @@
   .podium-1 { background: linear-gradient(90deg, rgba(245, 158, 11, 0.15), transparent) !important; }
   .podium-2 { background: linear-gradient(90deg, rgba(226, 232, 240, 0.10), transparent) !important; }
   .podium-3 { background: linear-gradient(90deg, rgba(217, 119, 6, 0.12), transparent) !important; }
+
+  @media (max-height: 700px) {
+    .card { padding: 14px 16px; margin: 10px auto; }
+    .lb-scroll-container { max-height: 140px; }
+    .my-rank-spotlight { padding: 4px 8px; font-size: 10px; margin-bottom: 6px; }
+  }
 
   .rank-badge {
     font-family: var(--mono);
@@ -876,7 +903,7 @@ function renderGlobalTab(level) {
 
   let btns = '';
   for (let i = 1; i <= 12; i++) {
-    btns += `<button class="lvl-btn${i === level ? ' active' : ''}" data-lv="${i}">${i}</button>`;
+    btns += `<button class="lvl-btn${i === level ? ' active' : ''}" data-lv="${i}"><span>${i}</span></button>`;
   }
 
   // Find player's rank in this level
@@ -918,7 +945,7 @@ function renderGlobalTab(level) {
     rows = `<div class="lb-scroll-container">${rows}</div>`;
   }
 
-  const headerLabel = '<div style="font-family:var(--mono);font-size:11px;font-weight:700;color:#94A3B8;letter-spacing:0.06em;margin:0 0 6px;text-align:center">🎯 SELECT LEVEL TO VIEW RANKINGS</div>';
+  const headerLabel = '<div style="font-family:var(--mono);font-size:10px;font-weight:700;color:#94A3B8;letter-spacing:0.06em;margin:0 0 4px;text-align:center">🎯 SELECT LEVEL TO VIEW RANKINGS</div>';
 
   el.innerHTML = `${headerLabel}<div class="lvl-selector">${btns}</div>${spotlight}${rows}`;
 
